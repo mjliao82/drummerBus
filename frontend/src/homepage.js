@@ -5,14 +5,19 @@ import { Link } from 'react-router-dom';
 function Homepage() {
   return (
     <div className="homepage-container">
-        <img 
+      <img 
         src="/image/drummerDesktop.jpg" 
         alt="Drummer" 
         className="image-display"  
-        />
-        <Link to ="/" className="button-link">
-            <button className="loginbutton">Log In</button>
+      />
+      <div className="button-container">
+        <Link to="/">
+          <button className="loginbutton">Log In</button>
         </Link>
+        <Link to="/">
+          <button className="booklessonbutton">Book a Lesson</button>
+        </Link>
+      </div>
     </div>
   );
 }
