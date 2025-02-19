@@ -1,14 +1,11 @@
 import React, {useState, useEffect} from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import '../styles/Register.css';
 
 
 const Register = () => {
-    console.log("✅ Register.js: Component is rendering!");
-    useEffect(() => {
-        console.log("Register component moutned!!!")
-    }, []);
     const URL = 'http://localhost:5001';
+    const navigate = useNavigate();
 
     const [registerData, setRegisterData] = useState({
         username: '',
@@ -16,8 +13,6 @@ const Register = () => {
         email: '',
     });
     const [registerError, setRegisterError] = useState('');
-
-    const navigate = useNavigate();
     
     const handleRegister = async(e) => {
         e.preventDefault();
@@ -46,6 +41,10 @@ const Register = () => {
             setRegisterError(error.message);
         }
     };
+    const handleGoBack = () => {
+        navigate(-1);
+    };
+
     return (
         <div className="register-container">
             <img 
@@ -54,10 +53,14 @@ const Register = () => {
             className="image-display"
             />
             <div className="register-form">
+                <button className="back-button" onClick={handleGoBack}>
+                    Go Back
+                </button>      
                 <h1>IQVentory - Drummer Bus</h1>
                 <div className="register-card">
                     <h2>Register Here</h2>
                     <form className="register-form" onSubmit={handleRegister}>
+                        
                         <input
                             className="input"
                             type="text"
@@ -84,12 +87,7 @@ const Register = () => {
                             value={registerData.email}
                             onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
                             required
-                        />
-                        <Link to="/">
-                            <button className="register-button">
-                                Register
-                            </button>
-                        </Link>
+                        />                
                     </form>
                 </div>
             </div>

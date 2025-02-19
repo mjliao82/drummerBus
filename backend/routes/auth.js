@@ -5,7 +5,33 @@ const router = express.Router();
 const supabase = require('../db');
 
 
-// Register account
+// Insert registered user to Supabase
+async function Register(username, password, email) {
+    const { data, error } = await supabase
+    .from(/*drummer database*/)
+    .insert({
+        username: username,
+        password: password,
+        email:email,
+    })
+    .select(); // use this to return newly created record
+
+    if (error) {
+        console.error("Error inserting record into Supabase");
+        return;
+    }
+    
+    if (!data) {
+        console.error("Record not created on Supabase insert");
+    }
+
+    console.log("Inserted record into Supabase: ", data);
+    return data;
+}
+
+
+
+// Register account post request
 router.post('/register', async(req, res) => {
     const {user, pw, email} = req.body;
     if (!user || user.trim() === '') {
@@ -36,10 +62,10 @@ router.post('/register', async(req, res) => {
 
     try {
         // salt user password
-        const hash_pw = await bcrypt.hash(pw, 10);
+        const stored_pw = await bcrypt.hash(pw, 10);
 
         // register user into credentials table
-        const new_user = await Register(user, hash_pw, email); // Define Register function
+        const new_user = await Register(user, stored_pw, email); // Define Register function
 
         if (!new_user) {
             return res.status(500).json({ message: 'Failed to register user' });
@@ -73,8 +99,8 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid username or password.' });
         }
 
-        const {id, password: hash_pw} = data;
-        const valid_login = await bcrypt.compare(password, hash_pw);
+        const {id, password: stored_pw} = data;
+        const valid_login = await bcrypt.compare(password, stored_pw);
         if (!valid_login) {
             return res.status(400).json({ message: 'Invalid username or password.' });
         }
@@ -82,7 +108,7 @@ router.post('/login', async (req, res) => {
         // Create JWT token
         const token = jwt.sign(
             {id: id, username: username}, 
-            process.env.SECRET_KEY, 
+            // process.env.SECRET_KEY, 
             {expiresIn: '1h'}
         );
 
