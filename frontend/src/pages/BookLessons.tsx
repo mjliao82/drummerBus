@@ -9,7 +9,7 @@ function BookLessons() {
 
   React.useEffect(() => {
     if (!user) {
-      navigate('/login', { state: { from: '/book' } });
+      navigate('/login', { replace: true, state: { from: '/book' } });
     }
   }, [user, navigate]);
 
