@@ -115,7 +115,7 @@ router.post('/login', async (req, res) => {
         // send auth token back in response
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: false, // set false when running on HTTPS
+            secure: false, // set true when running on HTTPS
             sameSite: 'Strict',
             maxAge: 360000,
         });
@@ -125,4 +125,14 @@ router.post('/login', async (req, res) => {
         res.status(500).json({error: "Internal server error."});
     }
 });
+
+router.post("/logout", (req, res) => {
+    res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'Strict',
+    });
+    res.status(200).json({message: "Logged out successfully!"});
+});
+
 module.exports = router;
