@@ -109,51 +109,64 @@ router.post('/register', async (req, res) => {
 
 
 
-// Login account
 router.post('/login', async (req, res) => {
-    const {username, password} = req.body;
+    const { email, password, role } = req.body;
 
     try {
-        const {data, error} = await supabase
-            .from('credentials')
-            .select('id, password')
-            .eq('username', username);
-        
+        // ✅ Fetch user by email
+        const { data: user, error } = await supabase
+            .from('accounts')
+            .select('id, email, password, role')
+            .eq('email', email)
+            .single(); 
+
         if (error) {
-            console.error("Database query error", error)
-            return res.status(500).json({ message: 'Error checking username availability' });
+            console.error("❌ Supabase Error:", error);
+            return res.status(500).json({ message: 'Database error occurred' });
         }
 
-        if (!data) {
-            return res.status(400).json({ message: 'Invalid username or password.' });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid email or password.' });
         }
 
-        const {id, password: stored_pw} = data;
-        const valid_login = await bcrypt.compare(password, stored_pw);
+        // Role Mismatch Prevention
+        if (user.role !== role) {
+            return res.status(403).json({ message: `Access denied. You cannot log in as ${role}.` });
+        }
+
+        // Compare hashed passwords
+        const valid_login = await bcrypt.compare(password, user.password);
         if (!valid_login) {
-            return res.status(400).json({ message: 'Invalid username or password.' });
+            return res.status(400).json({ message: 'Invalid email or password.' });
         }
 
         // Create JWT token
         const token = jwt.sign(
-            {id: id, username: username}, 
-            // process.env.SECRET_KEY, 
-            {expiresIn: '1h'}
+            { id: user.id, email: user.email, role: user.role },
+            process.env.JWT_SECRET,  
+            { expiresIn: '1h' }
         );
 
-        // send auth token back in response
+        // Send auth token back in response
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: false, // set true when running on HTTPS
+            secure: false,
             sameSite: 'Strict',
-            maxAge: 360000,
+            maxAge: 3600000,
         });
-        res.status(200).json({ message: 'Login successful', token });
+
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            user: { id: user.id, email: user.email, role: user.role }
+        });
+
     } catch (error) {
-        console.error("Unexpected error during login.");
-        res.status(500).json({error: "Internal server error."});
+        console.error("🔥 Unexpected error during login:", error);
+        res.status(500).json({ error: "Internal server error." });
     }
 });
+
 
 router.post("/logout", (req, res) => {
     res.clearCookie('auth_token', {
