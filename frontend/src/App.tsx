@@ -8,6 +8,7 @@ import BookLessons from './pages/BookLessons';
 import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import ClientDashboard from './pages/ClientDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ClientCalendar from './pages/ClientCalendar';
@@ -29,6 +30,7 @@ function App() {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<ClientDashboard />} />
         <Route path="/calendar" element={<ClientCalendar />} />
         <Route path="/payments" element={<Payments />} />

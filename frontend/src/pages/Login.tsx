@@ -1,38 +1,50 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Mail, Lock } from 'lucide-react';
 
 function Login() {
+  let URL: string;
+  if (window.location.host === "ppub-iqventory.web.app") {
+    URL = "future urls";
+  } else {
+    URL = "http://localhost:5001/";
+  }
   const navigate = useNavigate();
-  const location = useLocation();
   const setUser = useAuthStore((state) => state.setUser);
-  const [role, setRole] = React.useState<'client' | 'admin'>('client');
-  const [formData, setFormData] = React.useState({
-    email: '',
-    password: '',
-  });
+  const [role, setRole] = useState<'client' | 'admin'>('client'); // ✅ Restore role selection
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
 
-  const from = location.state?.from || (role === 'admin' ? '/admin/dashboard' : '/dashboard');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
-    const user = {
-      id: Math.random().toString(),
-      email: formData.email,
-      name: 'Test User',
-      role,
-      createdAt: new Date(),
-    };
+    try {
+      const response = await fetch(`${URL}auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password, role }),
+      });
 
-    setUser(user);
-    navigate(from);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Login failed');
+      }
+
+      setUser(result.user);
+
+      navigate(result.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong.');
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   return (
@@ -44,41 +56,34 @@ function Login() {
             <p className="mt-2 text-gray-600">Please enter your details to continue</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Login as
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('client')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                    role === 'client'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  Client
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('admin')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                    role === 'admin'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  Admin
-                </button>
-              </div>
-            </div>
+          {error && <p className="text-red-500 text-center">{error}</p>}
 
+          {/* Role Selection */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <button
+              type="button"
+              onClick={() => setRole('client')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                role === 'client' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+              }`}
+            >
+              Client
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('admin')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                role === 'admin' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+              }`}
+            >
+              Admin
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <div className="relative">
                 <Mail className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -93,10 +98,9 @@ function Login() {
               </div>
             </div>
 
+            {/* Password Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
               <div className="relative">
                 <Lock className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -111,10 +115,7 @@ function Login() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition"
-            >
+            <button type="submit" className="w-full bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition">
               Login
             </button>
           </form>

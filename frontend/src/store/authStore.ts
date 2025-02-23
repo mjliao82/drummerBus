@@ -5,6 +5,7 @@ interface User {
   email: string;
   name: string;
   role: 'admin' | 'client';
+  subRole?: 'Student' | 'Parent'; 
   createdAt: Date;
 }
 
