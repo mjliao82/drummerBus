@@ -1,75 +1,102 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const supabase = require('../db');
 
 
-// Insert registered user to Supabase
-async function Register(username, password, email) {
+async function Register(name, email, password, phone, address, role, subRole) {
     const { data, error } = await supabase
-    .from(/*drummer database*/)
-    .insert({
-        username: username,
-        password: password,
-        email:email,
-    })
-    .select(); // use this to return newly created record
+        .from('accounts')  // ✅ Ensure 'account' is the correct table name
+        .insert({
+            name: name,
+            email: email,
+            password: password, 
+            phone: phone,
+            address: address,
+            role: role,       
+            subRole: subRole,  
+            created_at: new Date(), 
+        })
+        .select();
 
     if (error) {
-        console.error("Error inserting record into Supabase");
-        return;
-    }
-    
-    if (!data) {
-        console.error("Record not created on Supabase insert");
+        console.error("🔥 Supabase Error:", error); // ✅ Log Supabase error
+        return null;
     }
 
-    console.log("Inserted record into Supabase: ", data);
+    console.log("✅ Inserted into Supabase: ", data);
     return data;
 }
 
 
+// Register account POST request
+router.post('/register', async (req, res) => {
+    console.log("Received data:", req.body); // ✅ Log incoming request
 
-// Register account post request
-router.post('/register', async(req, res) => {
-    const {user, pw, email} = req.body;
-    if (!user || user.trim() === '') {
-        return res.status(400).json({ message: 'Username is required' });
+    const { name, email, password, confirmPassword, phone, address, subRole } = req.body;
+
+    // Validation checks
+    if (!name || name.trim() === '') {
+        console.log("❌ Name validation failed");
+        return res.status(400).json({ message: 'Full name is required' });
     }
-    
-    if (!pw || pw.length < 8) {
-        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
-    }
-    
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        console.log("❌ Email validation failed");
         return res.status(400).json({ message: 'Valid email is required' });
     }
-
-    const {data, error} = await supabase
-        .from('credentials')
-        .select('id')
-        .eq('username', user);
-    
-    if (error) {
-        console.error("Error check for registering account query:", error)
-        return res.status(500).json({ message: 'Error checking username availability' });
+    if (!password || password.length < 8) {
+        console.log("❌ Password validation failed");
+        return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+    if (password !== confirmPassword) {
+        console.log("❌ Passwords do not match");
+        return res.status(400).json({ message: 'Passwords do not match' });
+    }
+    if (!phone || !/^\+?[0-9]{10,15}$/.test(phone)) {
+        console.log("❌ Phone validation failed");
+        return res.status(400).json({ message: 'Valid phone number is required' });
+    }
+    if (!address || address.trim() === '') {
+        console.log("❌ Address validation failed");
+        return res.status(400).json({ message: 'Address is required' });
+    }
+    if (!subRole || !['Student', 'Parent'].includes(subRole)) {
+        console.log("❌ SubRole validation failed");
+        return res.status(400).json({ message: 'Invalid subRole. Must be Student or Parent' });
     }
 
-    if (data) {
-        return res.status(409).json({ message: 'Username is already taken. Please choose a different one.' });
+    console.log("✅ All validations passed. Proceeding with registration.");
+
+    // Set role as 'client'
+    const role = 'client';
+
+    // Check if email already exists
+    const { data: existingUser, error: emailError } = await supabase
+        .from('accounts')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+    if (emailError && emailError.code !== 'PGRST116') { // Ignore 'No rows found' error
+        console.error("Error checking email:", emailError);
+        return res.status(500).json({ message: 'Error checking email availability' });
+    }
+    if (existingUser) {
+        return res.status(409).json({ message: 'Email is already registered' });
     }
 
     try {
-        // salt user password
-        const stored_pw = await bcrypt.hash(pw, 10);
+        // Hash password before storing
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // register user into credentials table
-        const new_user = await Register(user, stored_pw, email); // Define Register function
+        // Register user in Supabase
+        const newUser = await Register(name, email, hashedPassword, phone, address, role, subRole);
 
-        if (!new_user) {
+        if (!newUser) {
             return res.status(500).json({ message: 'Failed to register user' });
         }
+
         res.status(201).json({
             message: 'Registration successful. Waiting for management to approve your account.',
         });
@@ -79,6 +106,8 @@ router.post('/register', async(req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+
 
 // Login account
 router.post('/login', async (req, res) => {
