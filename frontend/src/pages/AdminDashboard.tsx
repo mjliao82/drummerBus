@@ -1,10 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, DollarSign, Clock, Bell, Search } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import LessonDetailsModal from '../components/LessonDetailsModal';
 import StudentDetailsModal from '../components/StudentDetailsModal';
 import PaymentDetailsModal from '../components/PaymentDetailsModal';
+import socket from '../utils/socket';
+
+interface Booking {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  instrument: string;
+  duration: string;
+  day: string;
+  time: string;
+  status: string;
+}
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -12,37 +26,29 @@ function AdminDashboard() {
   const [selectedLesson, setSelectedLesson] = React.useState<any>(null);
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   const [selectedPayment, setSelectedPayment] = React.useState<any>(null);
-
-  if (!user || user.role !== 'admin') {
-    navigate('/login');
-    return null;
-  }
-
-  const recentBookings = [
-    { 
-      id: '1',
-      student: 'John Doe',
-      instrument: 'Piano',
-      date: '2024-03-20',
-      time: '15:00',
-      status: 'Pending',
-      duration: '45 min',
-      location: '123 Music St, Harmony City',
-      price: 65,
-      notes: 'First lesson, beginner level'
-    },
-    {
-      id: '2',
-      student: 'Jane Smith',
-      instrument: 'Guitar',
-      date: '2024-03-21',
-      time: '16:30',
-      status: 'Confirmed',
-      duration: '60 min',
-      location: '456 Melody Ave, Harmony City',
-      price: 85
-    },
-  ];
+  const [bookings, setBookings] = React.useState<Booking[]>([]); // State for fetched bookings
+  useEffect(() =>{
+    if (!user || user.role !== 'admin') {
+      navigate('/login');
+      return;
+    }
+    const fetch_bookings = async () => {
+      try {
+        const response = await fetch("http://localhost:5001/fetch/bookings", {
+          method: "GET"
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch bookings");
+      }
+        const data = await response.json();
+        setBookings(data);
+      } catch(err) {
+        console.error('Error: ', err)
+      }
+    };
+    fetch_bookings();
+  }, [navigate, user])
+  if (!user) return null;
 
   const notifications = [
     {
@@ -157,13 +163,13 @@ function AdminDashboard() {
             </div>
             <div className="p-6">
               <div className="divide-y">
-                {recentBookings.map((booking) => (
+                {bookings.map((booking) => (
                   <div key={booking.id} className="py-4 first:pt-0 last:pb-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-gray-900">{booking.student}</p>
+                        <p className="font-semibold text-gray-900">{booking.name}</p>
                         <p className="text-sm text-gray-600">
-                          {booking.instrument} - {booking.date} at {booking.time}
+                          {booking.instrument} - {booking.day} at {booking.time}
                         </p>
                       </div>
                       <div className="flex items-center space-x-4">

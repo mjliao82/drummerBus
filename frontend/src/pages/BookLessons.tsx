@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Clock, MapPin, Phone, Home, Calendar, Watch } from 'lucide-react';
 import socket from '../utils/socket';
 
 // Establish WebSocket connection

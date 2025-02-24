@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 5001;
 const authRoutes = require('./routes/auth'); // includes register, login, logout
+const fetcher = require('./routes/fetcher');
 
 // Middleware
 app.use(express.json());
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 
 // Use routes
 app.use('/auth', authRoutes);
+app.use('/fetch', fetcher);
 
 // Start server
 app.listen(PORT, () => {
