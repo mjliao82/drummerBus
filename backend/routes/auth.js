@@ -30,6 +30,21 @@ async function Register(name, email, password, phone, address, role, subRole) {
 }
 
 
+router.get('/me', async (req, res) => {
+    const token = req.cookies.auth_token; // ✅ Read cookie from request
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized. Please log in." });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret'); // ✅ Verify JWT
+        res.json({ user: decoded }); // ✅ Send user details back
+    } catch (err) {
+        return res.status(403).json({ message: "Invalid token." });
+    }
+});
+
 // Register account POST request
 router.post('/register', async (req, res) => {
     console.log("Received data:", req.body); // ✅ Log incoming request
@@ -113,59 +128,52 @@ router.post('/login', async (req, res) => {
     const { email, password, role } = req.body;
 
     try {
-        // ✅ Fetch user by email
         const { data: user, error } = await supabase
             .from('accounts')
-            .select('id, email, password, role')
+            .select('id, name, email, phone, address, password, role')
             .eq('email', email)
-            .single(); 
+            .single();
 
-        if (error) {
-            console.error("❌ Supabase Error:", error);
-            return res.status(500).json({ message: 'Database error occurred' });
-        }
-
-        if (!user) {
+        if (error || !user) {
             return res.status(400).json({ message: 'Invalid email or password.' });
         }
 
-        // Role Mismatch Prevention
         if (user.role !== role) {
             return res.status(403).json({ message: `Access denied. You cannot log in as ${role}.` });
         }
 
-        // Compare hashed passwords
         const valid_login = await bcrypt.compare(password, user.password);
         if (!valid_login) {
             return res.status(400).json({ message: 'Invalid email or password.' });
         }
 
-        // Create JWT token
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            process.env.JWT_SECRET,  
+            {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                address: user.address,
+                role: user.role
+            },
+            process.env.JWT_SECRET || 'fallback_secret',
             { expiresIn: '1h' }
         );
 
-        // Send auth token back in response
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: false,
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'Strict',
             maxAge: 3600000,
         });
 
-        res.status(200).json({
-            message: 'Login successful',
-            token,
-            user: { id: user.id, email: user.email, role: user.role }
-        });
-
+        res.status(200).json({ message: 'Login successful', user });
     } catch (error) {
         console.error("🔥 Unexpected error during login:", error);
         res.status(500).json({ error: "Internal server error." });
     }
 });
+
 
 
 router.post("/logout", (req, res) => {

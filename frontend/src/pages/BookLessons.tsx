@@ -1,17 +1,77 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Clock, MapPin } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
+import { Music, Clock, MapPin, Phone, Home, Calendar, Watch } from 'lucide-react';
+
+// Establish WebSocket connection
+const socket = new WebSocket("ws://localhost:5002"); // Adjust WebSocket server URL
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  role: string;
+}
 
 function BookLessons() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  const [user, setUser] = useState<User | null>(null);
+  const [instrument, setInstrument] = useState('');
+  const [duration, setDuration] = useState('');
+  const [day, setDay] = useState('');
+  const [time, setTime] = useState('');
+  const [additionalNotes, setAdditionalNotes] = useState('');
 
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/login', { replace: true, state: { from: '/book' } });
+  // ✅ Fetch user info from backend
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/auth/me', {
+          method: 'GET',
+          credentials: 'include', // ✅ Send cookies with request
+        });
+
+        if (!response.ok) {
+          navigate('/login', { replace: true });
+          return;
+        }
+
+        const data = await response.json();
+        setUser(data.user); // ✅ Set user from backend
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        navigate('/login', { replace: true });
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
+
+  // ✅ Send booking data via WebSocket
+  const handleBookingSubmit = () => {
+    if (!instrument || !duration || !day || !time) {
+      alert("Please select a lesson type, duration, day, and time before submitting!");
+      return;
     }
-  }, [user, navigate]);
+
+    const bookingData = {
+      userId: user?.id,
+      name: user?.name,
+      email: user?.email,
+      phone: user?.phone || "Not provided",
+      address: user?.address || "Not provided",
+      instrument,
+      duration,
+      day,
+      time,
+      additionalNotes: additionalNotes.trim() || "No additional notes",
+    };
+
+    console.log("📡 Sending booking data via WebSocket:", bookingData);
+    socket.send(JSON.stringify(bookingData)); // ✅ Send to WebSocket server
+    alert("Booking request sent!");
+  };
 
   if (!user) return null;
 
@@ -28,10 +88,15 @@ function BookLessons() {
           <div className="bg-white p-8 rounded-lg shadow-sm">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Lesson Type</h2>
             <div className="space-y-4">
-              {['Piano', 'Guitar', 'Drums', 'Voice', 'Bass', 'Violin'].map((instrument) => (
-                <label key={instrument} className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:border-indigo-600 transition">
-                  <input type="radio" name="instrument" className="h-4 w-4 text-indigo-600" />
-                  <span className="text-gray-700">{instrument}</span>
+              {['Piano', 'Guitar', 'Drums', 'Voice', 'Bass', 'Violin'].map((instr) => (
+                <label key={instr} className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:border-indigo-600 transition">
+                  <input
+                    type="radio"
+                    name="instrument"
+                    className="h-4 w-4 text-indigo-600"
+                    onChange={() => setInstrument(instr)}
+                  />
+                  <span className="text-gray-700">{instr}</span>
                 </label>
               ))}
             </div>
@@ -41,22 +106,45 @@ function BookLessons() {
           <div className="bg-white p-8 rounded-lg shadow-sm">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose Duration</h2>
             <div className="space-y-4">
-              {[
-                { duration: '30 minutes', price: 'Request Quote' },
-                { duration: '1 hour', price: 'Request Quote' },
-                { duration: '1.5 hours', price: 'Request Quote' },
-                { duration: '2 hours', price: 'Request Quote' },
-                { duration: '3+ hours', price: 'Request Quote' }
-              ].map((option) => (
-                <label key={option.duration} className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:border-indigo-600 transition">
+              {['30 minutes', '1 hour', '1.5 hours', '2 hours', '3+ hours'].map((dur) => (
+                <label key={dur} className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:border-indigo-600 transition">
                   <div className="flex items-center space-x-3">
-                    <input type="radio" name="duration" className="h-4 w-4 text-indigo-600" />
-                    <span className="text-gray-700">{option.duration}</span>
+                    <input
+                      type="radio"
+                      name="duration"
+                      className="h-4 w-4 text-indigo-600"
+                      onChange={() => setDuration(dur)}
+                    />
+                    <span className="text-gray-700">{dur}</span>
                   </div>
-                  <span className="text-indigo-600 font-semibold">{option.price}</span>
                 </label>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Day and Time Selection */}
+        <div className="grid md:grid-cols-2 gap-8 mb-16">
+          <div className="bg-white p-8 rounded-lg shadow-sm">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Day</h2>
+            <select
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              onChange={(e) => setDay(e.target.value)}
+            >
+              <option value="">Select a day</option>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-white p-8 rounded-lg shadow-sm">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Time</h2>
+            <input
+              type="time"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              onChange={(e) => setTime(e.target.value)}
+            />
           </div>
         </div>
 
@@ -67,123 +155,31 @@ function BookLessons() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                  placeholder="Enter your name"
-                  defaultValue={user.name}
-                />
+                <input type="text" name="name" value={user.name} readOnly className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Your Email</label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                  placeholder="Enter your email"
-                  defaultValue={user.email}
-                />
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                  placeholder="Enter phone number"
-                />
+                <input type="email" name="email" value={user.email} readOnly className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Contact Method</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
-                  <option>Phone</option>
-                  <option>Email</option>
-                  <option>Text</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Your Address</label>
+                <input type="text" name="email" value={user.address} readOnly className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100" />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-              <input
-                type="text"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                placeholder="Enter your address"
-              />
-            </div>
-
-            {/* Multiple Students Section */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Students</h3>
-                <button
-                  type="button"
-                  className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                >
-                  + Add Another Student
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Your Phone Number</label>
+                <input type="text" name="email" value={user.phone} readOnly className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100" />
               </div>
-              <div className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                    placeholder="Student name"
-                  />
-                  <input
-                    type="number"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                    placeholder="Student age"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
-              <textarea
-                rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                placeholder="Any specific requirements or questions?"
-              />
             </div>
           </form>
         </div>
 
-        {/* Features */}
-        <div className="grid md:grid-cols-3 gap-8 mb-8">
-          <div className="flex items-center space-x-4">
-            <Music className="h-8 w-8 text-indigo-600" />
-            <div>
-              <h3 className="font-semibold text-gray-900">Professional Teachers</h3>
-              <p className="text-sm text-gray-600">Experienced music educators</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Clock className="h-8 w-8 text-indigo-600" />
-            <div>
-              <h3 className="font-semibold text-gray-900">Flexible Scheduling</h3>
-              <p className="text-sm text-gray-600">Choose your preferred time</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <MapPin className="h-8 w-8 text-indigo-600" />
-            <div>
-              <h3 className="font-semibold text-gray-900">Mobile Studio</h3>
-              <p className="text-sm text-gray-600">We come to you</p>
-            </div>
-          </div>
-        </div>
-
-        <button className="w-full bg-indigo-600 text-white py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition">
-          Request Quote
+        {/* Submit Button */}
+        <button
+          onClick={handleBookingSubmit}
+          className="w-full bg-indigo-600 text-white py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition"
+        >
+          Submit Booking Request
         </button>
-
-        <div className="mt-8 text-center text-gray-600">
-          <p>After submitting your request, we'll review your information and contact you with a personalized quote.</p>
-          <p className="mt-2">First-time students can book a single trial lesson. Returning students must purchase lesson packages.</p>
-        </div>
       </div>
     </div>
   );

@@ -25,6 +25,7 @@ function Login() {
       const response = await fetch(`${URL}auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: formData.email, password: formData.password, role }),
       });
 
@@ -46,6 +47,10 @@ function Login() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  const hangleRegister = () => {
+    navigate('/register')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -119,6 +124,11 @@ function Login() {
               Login
             </button>
           </form>
+          <button
+            onClick={hangleRegister}
+            className="w-full text-indigo-600 border px-6 py-3 rounded-md text-lg font-semibold hover:text-indigo-450 transition">
+              Register
+          </button>
         </div>
       </div>
     </div>
