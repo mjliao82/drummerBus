@@ -32,14 +32,15 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 5002 }); // WebSocket runs on a different port
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 5002 });
+const supabase = require('./db')
 
 wss.on('connection', (ws) => {
     console.log('📡 Client connected via WebSocket');
 
-    ws.on('message', (message) => {
+    ws.on('message', async (message) => {
         const data = JSON.parse(message);
         console.log(' New Booking Received:', data);
 
@@ -48,23 +49,42 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        // TODO: Store booking in database
-        console.log("✅ Booking Stored in Database:", {
-            userId: data.userId,
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            address: data.address, // ✅ Store address
-            instrument: data.instrument,
-            duration: data.duration,
-            day: data.day,
-            time: data.time,
-        });
-
+        if (data.type ==  "Booking request" ){
+            // helper function from a helper file 
+            // TODO: Store booking in database
+            try {
+                const { error } = await supabase
+                    .from('lessons')  
+                    .insert([{
+                        name: data.name,
+                        email: data.email,
+                        phone: data.phone,
+                        address: data.address,
+                        instrument: data.instrument,
+                        duration: data.duration,
+                        day: data.day,
+                        time: data.time,
+                        status: "pending",
+                    }])
+                    .select(); //to confirm success
+        
+                if (error) {
+                    console.error("Supabase Insert Error:", error);
+                    ws.send(JSON.stringify({ error: "Failed to store booking in database." }));
+                    return;
+                }        
+                // ✅ Send confirmation to the frontend
+                ws.send(JSON.stringify({ type: "BOOKING_CONFIRMATION", message: "🎵 Booking received successfully!", insertedData }));
+        
+            } catch (err) {
+                console.error("Unexpected Database Error:", err);
+                ws.send(JSON.stringify({ error: "Unexpected error while storing booking." }));
+            }
+        }
         ws.send(JSON.stringify({ message: "Booking received successfully!" }));
     });
 
     ws.on('close', () => {
-        console.log('❌ Client disconnected');
+        console.log('Client disconnected');
     });
 });

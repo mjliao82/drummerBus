@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, Clock, MapPin, Phone, Home, Calendar, Watch } from 'lucide-react';
+import socket from '../utils/socket';
 
 // Establish WebSocket connection
-const socket = new WebSocket("ws://localhost:5002"); // Adjust WebSocket server URL
 
 interface User {
   id: string;
@@ -23,7 +23,7 @@ function BookLessons() {
   const [time, setTime] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
 
-  // ✅ Fetch user info from backend
+  //Fetch user info from backend, cookie isn't accessible on frontend
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -38,7 +38,7 @@ function BookLessons() {
         }
 
         const data = await response.json();
-        setUser(data.user); // ✅ Set user from backend
+        setUser(data.user); 
       } catch (error) {
         console.error('Error fetching user:', error);
         navigate('/login', { replace: true });
@@ -48,7 +48,7 @@ function BookLessons() {
     fetchUser();
   }, [navigate]);
 
-  // ✅ Send booking data via WebSocket
+  // Send booking data via WebSocket
   const handleBookingSubmit = () => {
     if (!instrument || !duration || !day || !time) {
       alert("Please select a lesson type, duration, day, and time before submitting!");
@@ -56,6 +56,7 @@ function BookLessons() {
     }
 
     const bookingData = {
+      type: "Booking request",
       userId: user?.id,
       name: user?.name,
       email: user?.email,
@@ -69,7 +70,7 @@ function BookLessons() {
     };
 
     console.log("📡 Sending booking data via WebSocket:", bookingData);
-    socket.send(JSON.stringify(bookingData)); // ✅ Send to WebSocket server
+    socket.send(JSON.stringify(bookingData));
     alert("Booking request sent!");
   };
 
