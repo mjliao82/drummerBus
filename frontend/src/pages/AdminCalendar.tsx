@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import Calendar from '../components/Calendar';
@@ -8,44 +8,43 @@ import { format } from 'date-fns';
 function AdminCalendar() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const [selectedEvent, setSelectedEvent] = React.useState<any>(null);
-  const [showAddEventModal, setShowAddEventModal] = React.useState(false);
-  const [selectedDate, setSelectedDate] = React.useState<any>(null);
+  const [bookings, setBookings] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
 
+  // Fetch bookings from the backend
+  useEffect(() => {
+    fetch('/api/bookings')
+      .then((response) => response.json())
+      .then((data) => {
+        const formattedBookings = data.map((lesson) => ({
+          id: lesson.id,
+          title: `${lesson.instrument} Lesson - ${lesson.student_name}`,
+          start: `${lesson.requested_date}T${lesson.requested_time}`,
+          end: new Date(
+            new Date(`${lesson.requested_date}T${lesson.requested_time}`).getTime() + lesson.duration_minutes * 60000
+          ).toISOString(),
+          extendedProps: {
+            student: lesson.student_name,
+            instrument: lesson.instrument,
+            location: lesson.location,
+            status: lesson.status,
+          },
+        }));
+        setBookings(formattedBookings);
+      })
+      .catch((error) => console.error('Error fetching bookings:', error));
+  }, []);
+
+  
   if (!user || user.role !== 'admin') {
     navigate('/login');
     return null;
   }
 
-  // Sample events - in a real app, these would come from your backend
-  const events = [
-    {
-      id: '1',
-      title: 'Piano Lesson - John Doe',
-      start: '2024-03-20T15:00:00',
-      end: '2024-03-20T16:00:00',
-      extendedProps: {
-        student: 'John Doe',
-        instrument: 'Piano',
-        location: '123 Music St',
-        status: 'confirmed'
-      }
-    },
-    {
-      id: '2',
-      title: 'Guitar Lesson - Jane Smith',
-      start: '2024-03-21T14:00:00',
-      end: '2024-03-21T15:00:00',
-      extendedProps: {
-        student: 'Jane Smith',
-        instrument: 'Guitar',
-        location: '456 Melody Ave',
-        status: 'pending'
-      }
-    }
-  ];
-
-  const handleEventClick = (info: any) => {
+  // Handle clicking on an event (lesson) in the calendar
+  const handleEventClick = (info) => {
     setSelectedEvent({
       date: format(info.event.start, 'yyyy-MM-dd'),
       time: format(info.event.start, 'HH:mm'),
@@ -58,7 +57,8 @@ function AdminCalendar() {
     });
   };
 
-  const handleDateSelect = (info: any) => {
+  // Handle selecting a date on the calendar to add a lesson
+  const handleDateSelect = (info) => {
     setSelectedDate(info);
     setShowAddEventModal(true);
   };
@@ -79,19 +79,10 @@ function AdminCalendar() {
           </button>
         </div>
 
-        <Calendar
-          events={events}
-          onEventClick={handleEventClick}
-          onDateSelect={handleDateSelect}
-          isAdmin={true}
-        />
+        <Calendar events={bookings} onEventClick={handleEventClick} onDateSelect={handleDateSelect} isAdmin={true} />
 
         {selectedEvent && (
-          <LessonDetailsModal
-            isOpen={!!selectedEvent}
-            onClose={() => setSelectedEvent(null)}
-            lesson={selectedEvent}
-          />
+          <LessonDetailsModal isOpen={!!selectedEvent} onClose={() => setSelectedEvent(null)} lesson={selectedEvent} />
         )}
 
         {/* Add Lesson Modal */}
@@ -113,18 +104,14 @@ function AdminCalendar() {
                 <div className="max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
                   <form className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Student
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
                       <select className="w-full px-3 py-2 border rounded-md">
                         <option>John Doe</option>
                         <option>Jane Smith</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Instrument
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Instrument</label>
                       <select className="w-full px-3 py-2 border rounded-md">
                         <option>Piano</option>
                         <option>Guitar</option>
@@ -134,9 +121,7 @@ function AdminCalendar() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Date
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                         <input
                           type="date"
                           className="w-full px-3 py-2 border rounded-md"
@@ -144,9 +129,7 @@ function AdminCalendar() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Time
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
                         <input
                           type="time"
                           className="w-full px-3 py-2 border rounded-md"
@@ -155,9 +138,7 @@ function AdminCalendar() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Duration
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
                       <select className="w-full px-3 py-2 border rounded-md">
                         <option>30 minutes</option>
                         <option>45 minutes</option>
@@ -166,9 +147,7 @@ function AdminCalendar() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
                       <input
                         type="text"
                         className="w-full px-3 py-2 border rounded-md"
@@ -176,9 +155,7 @@ function AdminCalendar() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Notes
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                       <textarea
                         className="w-full px-3 py-2 border rounded-md"
                         rows={3}
