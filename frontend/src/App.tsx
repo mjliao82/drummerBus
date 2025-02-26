@@ -1,4 +1,4 @@
-import React from 'react';
+import {useEffect} from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Navigation from './components/Navigation';
@@ -18,9 +18,11 @@ import AdminPayments from './pages/AdminPayments';
 import Payments from './pages/Payments';
 
 function App() {
-  const user = useAuthStore((state) => state.user);
+  const { user, checkAuth } = useAuthStore();
   const showFooter = !user || user.role === 'client';
-
+  useEffect(() => {
+    checkAuth();
+  }, []);
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />

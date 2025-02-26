@@ -164,6 +164,8 @@ router.post('/login', async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Strict',
+            sameSite: "Lax",
+            path: "/", // Apply cookie to all routes
             maxAge: 3600000,
         });
 
@@ -174,8 +176,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-
-
 router.post("/logout", (req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,
@@ -184,5 +184,22 @@ router.post("/logout", (req, res) => {
     });
     res.status(200).json({message: "Logged out successfully!"});
 });
+
+
+router.get('/check', async (req, res) => {
+    const token = req.cookies.auth_token;
+
+    if (!token) {
+        return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        return res.status(200).json({ user: decoded });
+    } catch (error) {
+        return res.status(401).json({ message: "Invalid token" });
+    }
+});
+
 
 module.exports = router;

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Clock, MapPin, Phone, Home, Calendar, Watch } from 'lucide-react';
 import socket from '../utils/socket';
 
 // Establish WebSocket connection
@@ -179,7 +178,7 @@ function BookLessons() {
           onClick={handleBookingSubmit}
           className="w-full bg-indigo-600 text-white py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition"
         >
-          Submit Booking Request
+          Book Timeslot
         </button>
       </div>
     </div>

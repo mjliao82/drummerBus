@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 5001;
 const authRoutes = require('./routes/auth'); // includes register, login, logout
+const fetcher = require('./routes/fetcher');
 
 // Middleware
 app.use(express.json());
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 
 // Use routes
 app.use('/auth', authRoutes);
+app.use('/fetch', fetcher);
 
 // Start server
 app.listen(PORT, () => {
@@ -42,16 +44,15 @@ wss.on('connection', (ws) => {
 
     ws.on('message', async (message) => {
         const data = JSON.parse(message);
-        console.log(' New Booking Received:', data);
 
-        if (!data.userId || !data.instrument || !data.day || !data.time) {
+        console.log(' Received:', data.type);
+        console.log(data)
+        if (!data.name || !data.day || !data.time) {
             ws.send(JSON.stringify({ error: "Missing required booking fields!" }));
             return;
         }
 
         if (data.type ==  "Booking request" ){
-            // helper function from a helper file 
-            // TODO: Store booking in database
             try {
                 const { error } = await supabase
                     .from('lessons')  
@@ -64,7 +65,7 @@ wss.on('connection', (ws) => {
                         duration: data.duration,
                         day: data.day,
                         time: data.time,
-                        status: "pending",
+                        status: "Pending",
                     }])
                     .select(); //to confirm success
         
@@ -73,15 +74,68 @@ wss.on('connection', (ws) => {
                     ws.send(JSON.stringify({ error: "Failed to store booking in database." }));
                     return;
                 }        
-                // ✅ Send confirmation to the frontend
-                ws.send(JSON.stringify({ type: "BOOKING_CONFIRMATION", message: "🎵 Booking received successfully!", insertedData }));
-        
+                //Send confirmation to the frontend
+                const reqData = {
+                    type: "Ack Booking request",
+                    payload: {
+                        id: data.id,
+                        name: data.name,
+                        day: data.day,
+                        time: data.time,
+                        email: data.email,
+                        phone: data.phone,
+                        address: data.address,
+                        instrument: data.instrument,
+                        duration: data.duration,
+                        status: "Pending",
+                    }
+                }
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(reqData));
+                    }
+                });                        
             } catch (err) {
                 console.error("Unexpected Database Error:", err);
                 ws.send(JSON.stringify({ error: "Unexpected error while storing booking." }));
             }
+        } else if (data.type == "Booking confirmation") {
+            try {
+                const { error } = await supabase 
+                    .from('lessons')
+                    .update({status: data.status})
+                    .match({
+                        name: data.name,
+                        day: data.day,
+                        time: data.time,
+                        duration: data.duration
+                    });
+                if (error) {
+                    console.error("supabase update error: ", error);
+                    ws.send(JSON.stringify({error: "failed to update status in database"}));
+                    return;
+                };        
+                  const bookingData = {
+                    type: "Booking result",
+                    payload: {
+                        id: data.id,
+                        name: data.name,
+                        day: data.day,
+                        time: data.time,
+                        status: data.status
+                    }
+                }
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(bookingData));
+                    }
+                });  
+            } catch (err) {
+                console.error("database error: ", err);
+                ws.send(JSON.stringify({error: "Unexpected error while updating booking status"}))
+            }
         }
-        ws.send(JSON.stringify({ message: "Booking received successfully!" }));
+        ws.send(JSON.stringify({ message: "all is well" }));
     });
 
     ws.on('close', () => {
