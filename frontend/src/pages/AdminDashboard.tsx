@@ -51,6 +51,7 @@ function AdminDashboard() {
     const handleMessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
       if (data.type === "Ack Booking request") {
+        setBookings((prevBookings) => [...prevBookings, data.payload]); // Append new booking
         //add to set bookings
       } else if (data.type == "Booking result") {
         console.log("updating booking with new status")

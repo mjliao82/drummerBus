@@ -75,9 +75,26 @@ wss.on('connection', (ws) => {
                     return;
                 }        
                 //Send confirmation to the frontend
-
-                ws.send(JSON.stringify({ type: "Ack Booking request", message: "Booking received successfully!", insertedData }));
-        
+                const reqData = {
+                    type: "Ack Booking request",
+                    payload: {
+                        id: data.id,
+                        name: data.name,
+                        day: data.day,
+                        time: data.time,
+                        email: data.email,
+                        phone: data.phone,
+                        address: data.address,
+                        instrument: data.instrument,
+                        duration: data.duration,
+                        status: "Pending",
+                    }
+                }
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(reqData));
+                    }
+                });                        
             } catch (err) {
                 console.error("Unexpected Database Error:", err);
                 ws.send(JSON.stringify({ error: "Unexpected error while storing booking." }));
@@ -108,7 +125,11 @@ wss.on('connection', (ws) => {
                         status: data.status
                     }
                 }
-                ws.send(JSON.stringify(bookingData));
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(bookingData));
+                    }
+                });  
             } catch (err) {
                 console.error("database error: ", err);
                 ws.send(JSON.stringify({error: "Unexpected error while updating booking status"}))
