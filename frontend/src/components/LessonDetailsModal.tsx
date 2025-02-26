@@ -41,7 +41,7 @@ const LessonDetailsModal: React.FC<LessonDetailsModalProps> = ({
     };
     console.log("Sending booking confirmation via websocket", respondToClient);
     socket.send(JSON.stringify(respondToClient));
-    alert("Booking reqeust sent!");
+    onClose();
   };
 
   return (

@@ -75,6 +75,7 @@ wss.on('connection', (ws) => {
                     return;
                 }        
                 //Send confirmation to the frontend
+
                 ws.send(JSON.stringify({ type: "Ack Booking request", message: "Booking received successfully!", insertedData }));
         
             } catch (err) {
@@ -96,15 +97,18 @@ wss.on('connection', (ws) => {
                     console.error("supabase update error: ", error);
                     ws.send(JSON.stringify({error: "failed to update status in database"}));
                     return;
-                };
-                console.log("Updating with:", {
-                    name: data.name,
-                    day: data.day,
-                    time: data.time,
-                    duration: data.duration,
-                    status: data.status
-                });                
-                ws.send(JSON.stringify({type: "Booking result", message: "Status updated successfully!"}))
+                };        
+                  const bookingData = {
+                    type: "Booking result",
+                    payload: {
+                        id: data.id,
+                        name: data.name,
+                        day: data.day,
+                        time: data.time,
+                        status: data.status
+                    }
+                }
+                ws.send(JSON.stringify(bookingData));
             } catch (err) {
                 console.error("database error: ", err);
                 ws.send(JSON.stringify({error: "Unexpected error while updating booking status"}))

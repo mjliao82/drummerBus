@@ -15,7 +15,7 @@ socket.onmessage = (event) => {
         alert(`Booking Confirmed: ${data.payload}`);
         break;
 
-      case "NEW_CHAT_MESSAGE":
+      case "Booking result":
         console.log("New chat message:", data.payload);
         break;
 

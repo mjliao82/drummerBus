@@ -52,7 +52,18 @@ function AdminDashboard() {
       const data = JSON.parse(event.data);
       if (data.type === "Ack Booking request") {
         //add to set bookings
-      }
+      } else if (data.type == "Booking result") {
+        console.log("updating booking with new status")
+        setBookings((prevBookings) =>
+        prevBookings.map((booking) =>
+              booking.name === data.payload.name &&
+              booking.day === data.payload.day &&
+              booking.time === data.payload.time
+                ? { ...booking, status: data.payload.status }
+                : booking
+          )
+        );
+      };
     };
     socket.addEventListener("message", handleMessage);
 
@@ -189,6 +200,8 @@ function AdminDashboard() {
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                           booking.status === 'Confirmed' 
                             ? 'bg-green-100 text-green-800'
+                            : booking.status === "Declined"
+                            ? "bg-red-100 text-red-800"
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
                           {booking.status}
