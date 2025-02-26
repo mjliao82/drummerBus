@@ -44,16 +44,15 @@ wss.on('connection', (ws) => {
 
     ws.on('message', async (message) => {
         const data = JSON.parse(message);
-        console.log(' New Booking Received:', data);
 
-        if (!data.userId || !data.instrument || !data.day || !data.time) {
+        console.log(' Received:', data.type);
+        console.log(data)
+        if (!data.name || !data.day || !data.time) {
             ws.send(JSON.stringify({ error: "Missing required booking fields!" }));
             return;
         }
 
         if (data.type ==  "Booking request" ){
-            // helper function from a helper file 
-            // TODO: Store booking in database
             try {
                 const { error } = await supabase
                     .from('lessons')  
@@ -66,7 +65,7 @@ wss.on('connection', (ws) => {
                         duration: data.duration,
                         day: data.day,
                         time: data.time,
-                        status: "pending",
+                        status: "Pending",
                     }])
                     .select(); //to confirm success
         
@@ -75,15 +74,43 @@ wss.on('connection', (ws) => {
                     ws.send(JSON.stringify({ error: "Failed to store booking in database." }));
                     return;
                 }        
-                // ✅ Send confirmation to the frontend
-                ws.send(JSON.stringify({ type: "BOOKING_CONFIRMATION", message: "🎵 Booking received successfully!", insertedData }));
+                //Send confirmation to the frontend
+                ws.send(JSON.stringify({ type: "Ack Booking request", message: "Booking received successfully!", insertedData }));
         
             } catch (err) {
                 console.error("Unexpected Database Error:", err);
                 ws.send(JSON.stringify({ error: "Unexpected error while storing booking." }));
             }
+        } else if (data.type == "Booking confirmation") {
+            try {
+                const { error } = await supabase 
+                    .from('lessons')
+                    .update({status: data.status})
+                    .match({
+                        name: data.name,
+                        day: data.day,
+                        time: data.time,
+                        duration: data.duration
+                    });
+                if (error) {
+                    console.error("supabase update error: ", error);
+                    ws.send(JSON.stringify({error: "failed to update status in database"}));
+                    return;
+                };
+                console.log("Updating with:", {
+                    name: data.name,
+                    day: data.day,
+                    time: data.time,
+                    duration: data.duration,
+                    status: data.status
+                });                
+                ws.send(JSON.stringify({type: "Booking result", message: "Status updated successfully!"}))
+            } catch (err) {
+                console.error("database error: ", err);
+                ws.send(JSON.stringify({error: "Unexpected error while updating booking status"}))
+            }
         }
-        ws.send(JSON.stringify({ message: "Booking received successfully!" }));
+        ws.send(JSON.stringify({ message: "all is well" }));
     });
 
     ws.on('close', () => {

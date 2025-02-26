@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { Calendar, Clock, MapPin, Music2, DollarSign } from 'lucide-react';
+import socket from '../utils/socket';
 
 interface LessonDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   lesson: {
-    date: string;
+    day: string;
     time: string;
     instrument: string;
     duration: string;
     location?: string;
-    student: string;
+    name: string;
     status: string;
     price?: number;
     notes?: string;
@@ -28,16 +29,30 @@ const LessonDetailsModal: React.FC<LessonDetailsModalProps> = ({
   const handleStatusChange = async (newStatus: string) => {
     setStatus(newStatus); // Update UI immediately for better UX
   };
-  
+
+  const handleProceed = () => {
+    const respondToClient = {
+      type: "Booking confirmation",
+      name: lesson.name,
+      day: lesson.day,
+      time: lesson.time,
+      duration: lesson.duration,
+      status: status
+    };
+    console.log("Sending booking confirmation via websocket", respondToClient);
+    socket.send(JSON.stringify(respondToClient));
+    alert("Booking reqeust sent!");
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Lesson Details">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Lesson Details - ${lesson.name}`}>
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-6">
           <div className="flex items-start space-x-3">
             <Calendar className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-1" />
             <div>
-              <p className="text-sm font-medium text-gray-500">Date & Time</p>
-              <p className="text-gray-900">{lesson.date} at {lesson.time}</p>
+              <p className="text-sm font-medium text-gray-500">Day & Time</p>
+              <p className="text-gray-900">{lesson.day} at {lesson.time}</p>
             </div>
           </div>
           <div className="flex items-start space-x-3">
@@ -103,8 +118,11 @@ const LessonDetailsModal: React.FC<LessonDetailsModalProps> = ({
             </span>
           </div>
           {lesson.status !== 'Completed' && (
-            <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">
-              Reschedule Lesson
+            <button 
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
+              onClick={handleProceed}
+              >
+              Proceed
             </button>
           )}
         </div>

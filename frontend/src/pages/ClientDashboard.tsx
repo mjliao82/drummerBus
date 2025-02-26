@@ -93,8 +93,8 @@ function ClientDashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Hours</p>
-                <p className="text-2xl font-bold text-gray-900">24.5</p>
+                <p className="text-sm text-gray-600">Subscribed Time Slot</p>
+                <p className="text-2xl font-bold text-gray-900">Mondays 4:20PM</p>
               </div>
               <Clock className="h-8 w-8 text-indigo-600" />
             </div>

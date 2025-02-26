@@ -1,4 +1,4 @@
-const socket = new WebSocket("ws://localhost:5002"); // Adjust WebSocket URL
+const socket = new WebSocket("ws://localhost:5002"); 
 
 socket.onopen = () => {
   console.log(" WebSocket connection established");
@@ -11,7 +11,7 @@ socket.onmessage = (event) => {
 
     // Handle different message types
     switch (data.type) {
-      case "BOOKING_CONFIRMATION":
+      case "Ack Booking request":
         alert(`Booking Confirmed: ${data.payload}`);
         break;
 

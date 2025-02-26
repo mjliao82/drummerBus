@@ -4,6 +4,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 const Navigation = () => {
+  let URL: string;
+  if (window.location.host === "ppub-iqventory.web.app") {
+    URL = "future urls";
+  } else {
+    URL = "http://localhost:5001/";
+  }
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -13,8 +19,19 @@ const Navigation = () => {
     return location.pathname === path ? 'text-indigo-600' : 'text-gray-700';
   };
 
-  const handleLogout = () => {
+  const handleLogout = async() => {
     logout();
+    try {
+      const response = await fetch(`${URL}auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      const result = await response.json();
+      console.log(result);
+    } catch (error) {
+      console.error("logout error: ", error);
+    }
     navigate('/');
   };
 

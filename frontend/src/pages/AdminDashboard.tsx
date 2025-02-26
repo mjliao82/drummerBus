@@ -47,7 +47,20 @@ function AdminDashboard() {
       }
     };
     fetch_bookings();
+
+    const handleMessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "Ack Booking request") {
+        //add to set bookings
+      }
+    };
+    socket.addEventListener("message", handleMessage);
+
+    return () => {
+      socket.removeEventListener("message", handleMessage);
+    };
   }, [navigate, user])
+
   if (!user) return null;
 
   const notifications = [

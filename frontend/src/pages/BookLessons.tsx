@@ -178,7 +178,7 @@ function BookLessons() {
           onClick={handleBookingSubmit}
           className="w-full bg-indigo-600 text-white py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition"
         >
-          Submit Booking Request
+          Book Timeslot
         </button>
       </div>
     </div>
