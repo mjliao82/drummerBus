@@ -1,21 +1,28 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Mail, Lock } from 'lucide-react';
 
 function Login() {
+  // Determine backend URL based on host
   let URL: string;
   if (window.location.host === "ppub-iqventory.web.app") {
     URL = "future urls";
   } else {
     URL = "http://localhost:5001/";
   }
+
   const navigate = useNavigate();
+  const location = useLocation();
   const setUser = useAuthStore((state) => state.setUser);
-  const [role, setRole] = useState<'client' | 'admin'>('client'); // ✅ Restore role selection
+
+  // Use "client" or "student" as needed; here we use "client" per backend logic.
+  const [role, setRole] = useState<'client' | 'admin'>('client');
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
+  // Determine where to navigate after login
+  const from = location.state?.from || (role === 'admin' ? '/admin/dashboard' : '/dashboard');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,21 +43,20 @@ function Login() {
       }
 
       setUser(result.user);
-
       navigate(result.user.role === 'admin' ? '/admin/dashboard' : '/dashboard');
-
     } catch (err: any) {
       setError(err.message || 'Something went wrong.');
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const hangleRegister = () => {
-    navigate('/register')
-  }
+  const handleRegister = () => {
+    navigate('/register');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -61,28 +67,35 @@ function Login() {
             <p className="mt-2 text-gray-600">Please enter your details to continue</p>
           </div>
 
-          {error && <p className="text-red-500 text-center">{error}</p>}
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
           {/* Role Selection */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <button
-              type="button"
-              onClick={() => setRole('client')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                role === 'client' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-              }`}
-            >
-              Client
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('admin')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                role === 'admin' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-              }`}
-            >
-              Admin
-            </button>
+          <div className="block mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Login as</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setRole('client')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                  role === 'client'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('admin')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                  role === 'admin'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                }`}
+              >
+                Admin
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -120,14 +133,19 @@ function Login() {
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition">
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition"
+            >
               Login
             </button>
           </form>
+
           <button
-            onClick={hangleRegister}
-            className="w-full text-indigo-600 border px-6 py-3 rounded-md text-lg font-semibold hover:text-indigo-450 transition">
-              Register
+            onClick={handleRegister}
+            className="w-full mt-4 text-indigo-600 border px-6 py-3 rounded-md text-lg font-semibold hover:text-indigo-450 transition"
+          >
+            Register
           </button>
         </div>
       </div>

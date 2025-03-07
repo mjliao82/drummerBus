@@ -6,44 +6,44 @@ import { Calendar, Phone, Mail, Music } from 'lucide-react';
 
 const demoImages = [
   {
-    url: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d',
-    alt: 'Music studio setup'
+    url: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0',
+    alt: 'Drum set in studio'
   },
   {
-    url: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae',
-    alt: 'Piano lessons'
+    url: 'https://images.unsplash.com/photo-1543443258-92b04ad5ec4b',
+    alt: 'Drummer performing'
   },
   {
-    url: 'https://images.unsplash.com/photo-1621112904887-419379ce6824',
-    alt: 'Music bus exterior'
+    url: 'https://images.unsplash.com/photo-1457523054379-8d03ab9fc2aa',
+    alt: 'Drum lesson'
   }
 ];
 
 function Home() {
   const navigate = useNavigate();
-  const promoText = "Special Offer: Book your first lesson today and get 20% off!";
+  const promoText = "Special Offer: Book your first drum lesson today and get 20% off!";
   
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section with Video Background */}
       <VideoBackground 
-        videoUrl="/background-video.mp4"
-        fallbackImageUrl="https://images.unsplash.com/photo-1511379938547-c1f69419868d"
+        videoUrl="https://player.vimeo.com/external/370331493.sd.mp4?s=e90dcaba73c19e0e36f03406b47bbd6992dd6c1c&profile_id=139&oauth2_token_id=57447761"
+        fallbackImageUrl="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0"
       >
         <div className="flex items-center justify-center h-full text-center px-4">
           <div className="max-w-4xl">
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Music Lessons That Come to You
+              Drum Lessons That Come to You
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-8">
-              Experience the convenience of professional music education in our state-of-the-art mobile studio
+              Experience the convenience of professional drum education in our state-of-the-art mobile studio
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
-                onClick={() => navigate('/book')}
+                onClick={() => navigate('/contact')}
                 className="bg-indigo-600 text-white px-8 py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition"
               >
-                Book a Lesson
+                Request a Lesson
               </button>
               <button 
                 onClick={() => navigate('/pricing')}
@@ -65,7 +65,7 @@ function Home() {
 
         {/* Image Carousel Section */}
         <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Our Mobile Studio</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">Our Mobile Drum Studio</h2>
           <ImageCarousel images={demoImages} />
         </section>
 
@@ -80,8 +80,8 @@ function Home() {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <Music className="h-10 w-10 text-indigo-600 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Professional Teachers</h3>
-              <p className="text-gray-600">Learn from experienced and passionate music educators</p>
+              <h3 className="text-xl font-semibold mb-2">Professional Drum Teacher</h3>
+              <p className="text-gray-600">Learn from an experienced and passionate drum educator</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <Mail className="h-10 w-10 text-indigo-600 mb-4" />

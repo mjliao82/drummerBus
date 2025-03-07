@@ -4,12 +4,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 const Navigation = () => {
-  let URL: string;
+  // Determine the backend URL based on your host
+  let URL;
   if (window.location.host === "ppub-iqventory.web.app") {
     URL = "future urls";
   } else {
     URL = "http://localhost:5001/";
   }
+
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -19,8 +21,9 @@ const Navigation = () => {
     return location.pathname === path ? 'text-indigo-600' : 'text-gray-700';
   };
 
-  const handleLogout = async() => {
-    logout();
+  // Combined backend and frontend logout logic
+  const handleLogout = async () => {
+    logout(); // Frontend logout
     try {
       const response = await fetch(`${URL}auth/logout`, {
         method: 'POST',
@@ -40,6 +43,7 @@ const Navigation = () => {
     if (!user) {
       return [
         { path: '/', label: 'Home' },
+        { path: '/about', label: 'About Us' },
         { path: '/pricing', label: 'Pricing' },
         { path: '/contact', label: 'Contact' },
       ];
@@ -155,6 +159,6 @@ const Navigation = () => {
       )}
     </nav>
   );
-}
+};
 
 export default Navigation;

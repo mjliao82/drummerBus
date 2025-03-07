@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import LessonDetailsModal from '../components/LessonDetailsModal';
 import PaymentDetailsModal from '../components/PaymentDetailsModal';
 
-function ClientDashboard() {
+function StudentDashboard() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [selectedLesson, setSelectedLesson] = React.useState<any>(null);
@@ -20,21 +20,21 @@ function ClientDashboard() {
     {
       date: '2024-03-20',
       time: '15:00',
-      instrument: 'Piano',
+      instrument: 'Rock Drums',
       duration: '45 min',
       location: '123 Music St, Harmony City',
-      student: 'John Doe',
+      student: user.name,
       status: 'Confirmed',
       price: 65,
-      notes: 'Please have the Bach piece prepared for review'
+      notes: 'Please practice the basic rock beats we covered last time'
     },
     {
       date: '2024-03-23',
       time: '14:30',
-      instrument: 'Guitar',
+      instrument: 'Jazz Drums',
       duration: '60 min',
       location: '123 Music St, Harmony City',
-      student: 'John Doe',
+      student: user.name,
       status: 'Pending',
       price: 85
     },
@@ -43,21 +43,21 @@ function ClientDashboard() {
   const lessonHistory = [
     {
       date: '2024-03-15',
-      instrument: 'Piano',
+      instrument: 'Rock Drums',
       duration: '45 min',
       status: 'Completed',
       location: '123 Music St, Harmony City',
-      student: 'John Doe',
+      student: user.name,
       price: 65,
-      notes: 'Excellent progress on the new piece'
+      notes: 'Excellent progress on the drum fills'
     },
     {
       date: '2024-03-10',
-      instrument: 'Piano',
+      instrument: 'Beginner Drums',
       duration: '45 min',
       status: 'Completed',
       location: '123 Music St, Harmony City',
-      student: 'John Doe',
+      student: user.name,
       price: 65
     },
   ];
@@ -67,7 +67,7 @@ function ClientDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-          <p className="mt-2 text-gray-600">Manage your lessons and account details</p>
+          <p className="mt-2 text-gray-600">Manage your drum lessons and account details</p>
         </div>
 
         {/* Quick Stats */}
@@ -102,7 +102,7 @@ function ClientDashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Instruments</p>
+                <p className="text-sm text-gray-600">Drum Styles</p>
                 <p className="text-2xl font-bold text-gray-900">2</p>
               </div>
               <Music className="h-8 w-8 text-indigo-600" />
@@ -174,18 +174,22 @@ function ClientDashboard() {
       </div>
 
       {/* Modals */}
-      <LessonDetailsModal
-        isOpen={!!selectedLesson}
-        onClose={() => setSelectedLesson(null)}
-        lesson={selectedLesson || {}}
-      />
-      <PaymentDetailsModal
-        isOpen={!!selectedPayment}
-        onClose={() => setSelectedPayment(null)}
-        payment={selectedPayment || {}}
-      />
+      {selectedLesson && (
+        <LessonDetailsModal
+          isOpen={!!selectedLesson}
+          onClose={() => setSelectedLesson(null)}
+          lesson={selectedLesson}
+        />
+      )}
+      {selectedPayment && (
+        <PaymentDetailsModal
+          isOpen={!!selectedPayment}
+          onClose={() => setSelectedPayment(null)}
+          payment={selectedPayment}
+        />
+      )}
     </div>
   );
 }
 
-export default ClientDashboard;
+export default StudentDashboard;

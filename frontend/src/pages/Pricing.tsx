@@ -10,7 +10,7 @@ function Pricing() {
       name: 'Starter Package',
       price: '140',
       duration: '4 Lessons',
-      description: 'Perfect for beginners to try out our lessons',
+      description: 'Perfect for beginners to try out our drum lessons',
       features: [
         '30-minute lessons',
         'Flexible scheduling',
@@ -53,7 +53,7 @@ function Pricing() {
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h1>
-          <p className="text-xl text-gray-600">Choose the perfect package for your musical journey</p>
+          <p className="text-xl text-gray-600">Choose the perfect package for your drumming journey</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -80,7 +80,7 @@ function Pricing() {
                   ))}
                 </ul>
                 <button
-                  onClick={() => navigate('/book')}
+                  onClick={() => navigate('/contact')}
                   className={`w-full py-3 rounded-md text-lg font-semibold transition
                     ${plan.popular
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700'
@@ -105,6 +105,8 @@ function Pricing() {
                 <li>• Lessons must be used within 6 months of purchase</li>
                 <li>• 24-hour cancellation policy applies</li>
                 <li>• First-time students can try a single lesson before committing to a package</li>
+                <li>• Drum sticks are provided, but students are encouraged to have their own</li>
+                <li>• Practice pads available for purchase to enhance at-home practice</li>
               </ul>
             </div>
           </div>
