@@ -27,7 +27,7 @@ function Home() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section with Video Background */}
       <VideoBackground 
-        videoUrl="https://player.vimeo.com/external/370331493.sd.mp4?s=e90dcaba73c19e0e36f03406b47bbd6992dd6c1c&profile_id=139&oauth2_token_id=57447761"
+        videoUrl="background-video.mp4"
         fallbackImageUrl="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0"
       >
         <div className="flex items-center justify-center h-full text-center px-4">

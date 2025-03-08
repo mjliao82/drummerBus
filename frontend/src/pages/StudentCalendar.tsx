@@ -10,7 +10,7 @@ function StudentCalendar() {
   const user = useAuthStore((state) => state.user);
   const [selectedEvent, setSelectedEvent] = React.useState<any>(null);
 
-  if (!user || user.role !== 'student') {
+  if (!user || user.role !== 'client') {
     navigate('/login');
     return null;
   }

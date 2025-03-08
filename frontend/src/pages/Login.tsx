@@ -16,8 +16,8 @@ function Login() {
   const location = useLocation();
   const setUser = useAuthStore((state) => state.setUser);
 
-  // Use "client" or "student" as needed; here we use "client" per backend logic.
-  const [role, setRole] = useState<'client' | 'admin'>('client');
+  // Use "student" or "admin" in UI, defaulting to "student"
+  const [role, setRole] = useState<'student' | 'admin'>('student');
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
@@ -28,12 +28,15 @@ function Login() {
     e.preventDefault();
     setError('');
 
+    // Convert role: if user selects "student", send "client" to backend
+    const roleToSend = role === 'student' ? 'client' : role;
+
     try {
       const response = await fetch(`${URL}auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email: formData.email, password: formData.password, role }),
+        body: JSON.stringify({ email: formData.email, password: formData.password, role: roleToSend }),
       });
 
       const result = await response.json();
@@ -75,14 +78,14 @@ function Login() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => setRole('client')}
+                onClick={() => setRole('student')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                  role === 'client'
+                  role === 'student'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
               >
-                Client
+                Student
               </button>
               <button
                 type="button"
