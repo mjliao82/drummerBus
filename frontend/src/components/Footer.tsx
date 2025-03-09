@@ -79,6 +79,9 @@ function Footer() {
           <p className="text-center text-gray-600">
             © {new Date().getFullYear()} MusicBus. All rights reserved.
           </p>
+          <p className="text-center text-gray-500 mt-2">
+            Website made by <a href="https://iqventory.web.app/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800">IQVentory</a>
+          </p>
         </div>
       </div>
     </footer>

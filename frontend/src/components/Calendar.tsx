@@ -56,7 +56,7 @@ const Calendar: React.FC<CalendarProps> = ({
         allDaySlot={false}
         slotDuration="00:30:00"
         eventClassNames={(arg) => {
-          const status = arg.event.extendedProps.status?.toLowerCase();
+          const status = arg.event.extendedProps?.status?.toLowerCase();
           return [
             'cursor-pointer',
             status === 'confirmed' ? 'bg-green-500' :

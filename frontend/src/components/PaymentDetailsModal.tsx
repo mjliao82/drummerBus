@@ -22,12 +22,16 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
   onClose,
   payment
 }) => {
+  if (!payment || !payment.amount || !payment.status) {
+    return null;
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Payment Details">
       <div className="space-y-6">
         <div className="flex items-center justify-between pb-6 border-b">
           <div>
-            <p className="text-2xl font-bold text-gray-900">${payment.amount?.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900">${payment.amount.toFixed(2)}</p>
             <p className="text-sm text-gray-500">{payment.date}</p>
           </div>
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -37,7 +41,7 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
               ? 'bg-red-100 text-red-800'
               : 'bg-yellow-100 text-yellow-800'
           }`}>
-            {payment.status?.charAt(0).toUpperCase() + payment.status?.slice(1)}
+            {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
           </span>
         </div>
 
