@@ -260,7 +260,7 @@ function Register() {
                         </div>
 
                         {/* Submit Button */}
-                        <div>
+                        <div className='flex gap-1'>
                             <p>Click on link to visit mobile number consent form: </p>
                             <a href="https://forms.gle/vG8QzNqBrcHiGP55A" target="_blank" rel="noopener noreferrer"    style={{ 
                                 color: "#007bff", 
