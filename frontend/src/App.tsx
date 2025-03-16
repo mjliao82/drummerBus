@@ -16,7 +16,7 @@ import AdminCalendar from './pages/AdminCalendar';
 import AdminStudents from './pages/AdminStudents';
 import AdminPayments from './pages/AdminPayments';
 import Payments from './pages/Payments';
-
+import Register from './pages/Register';
 function App() {
   const user = useAuthStore((state) => state.user);
   const showFooter = !user || user.role === 'client';
@@ -38,6 +38,7 @@ function App() {
         <Route path="/admin/calendar" element={<AdminCalendar />} />
         <Route path="/admin/students" element={<AdminStudents />} />
         <Route path="/admin/payments" element={<AdminPayments />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
       {showFooter && <Footer />}
     </div>

@@ -43,6 +43,10 @@ function Contact() {
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
+          {/* Scrolling Photo Gallery at the bottom */}
+          <div className="mt-16">
+            <ScrollingPhotoGallery photos={galleryPhotos} />
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Get in Touch</h1>
           <p className="text-xl text-gray-600">We'd love to hear from you</p>
         </div>
@@ -112,6 +116,7 @@ function Contact() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
                 <div className="mb-2 p-3 bg-amber-50 text-amber-800 text-sm rounded-md">
                   <p>If you are requesting a lesson, please make sure to include student age and skill level in your message.</p>
+                  <b>Pricing varies based on locations.</b>
                 </div>
                 <textarea
                   rows={4}
@@ -195,11 +200,6 @@ function Contact() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Scrolling Photo Gallery at the bottom */}
-        <div className="mt-16">
-          <ScrollingPhotoGallery photos={galleryPhotos} />
         </div>
       </div>
     </div>
