@@ -7,6 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const authRoutes = require('./routes/auth'); // includes register, login, logout
 const fetcher = require('./routes/fetcher');
+const smsRoutes = require("./sms");
 
 // Middleware
 app.use(express.json());
@@ -21,6 +22,7 @@ app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Test route
+
 app.get('/', (req, res) => {
     res.send('Express backend is running!');
 });
@@ -28,6 +30,9 @@ app.get('/', (req, res) => {
 // Use routes
 app.use('/auth', authRoutes);
 app.use('/fetch', fetcher);
+app.use('/sms', smsRoutes.router);
+// all the request from frontend will be going to https://lidrummerbus.web.app/sms 
+// in sms.js file, you can use path / to recieve msg 
 
 // Start server
 app.listen(PORT, () => {
