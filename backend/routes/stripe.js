@@ -18,7 +18,10 @@ router.post('/create-checkout-session', async (req, res) => {
         }));
         const session = await stripe.checkout.sessions.create({
             mode: 'payment',
-            payment_method_types: ["card", "us_bank_account"],
+            payment_intent_data: {
+                capture_method: 'automatic', // Enables automatic capture of funds, USED FOR TESTING, REMOVE FOR LIVE VERSION
+            },
+            payment_method_types: ["us_bank_account", "card"],
             success_url: `${DOMAIN}?success=true`,
             cancel_url: `${DOMAIN}?cancel=true`,
             line_items,
@@ -29,41 +32,17 @@ router.post('/create-checkout-session', async (req, res) => {
     }    
 });
 
-
-// Create Stripe PaymentIntent Object that tracks the entire payment process for a customer
-// Used to handle payments securely and encures funds are properly authorized 
-// router.post('/create-payment-intent', async(req, res) => {
-//     try {
-//         const {amount} = req.body;
-
-//         if (!amount) {
-//             return res.status(400).json({ error: "Invalid amount." });
-//         }
-        
-//         // Create PaymentIntent Obj here with amount in cents
-//         const paymentIntent = await stripe.paymentIntents.create({
-//             amount,
-//             currency: "usd",
-//             payment_method_types: ["card"],
-//         });
-
-//         // Send clientSecret to the frontend
-//         res.json({clientSecret: paymentIntent.client_secret});
-//     } catch (error) {
-//         console.error("Stripe error: ", error);
-//         res.status(500).json({error: error.message});
-//     }
-// });
-
-
+// This endpoint is mainly used for direct bank transfers
 // This endpoint listens for events from Stripe and automatically 
 // updates the app based on real-time payment status
 // Located in Stripe Dashboard -> Developers -> Webhooks
 router.post("/webhook", (req, res) => {
+    const signature = req.headers["stripe-signaturenature"];
+    const webhookKey = process.env.STRIPE_WEBHOOK_SECRET_KEY;
     let event;
     try {
-        event = JSON.parse(req.body.toString());
-        
+        // event = JSON.parse(req.body.toString());
+        event = stripe.webhooks.constructEvent(req.body, signature, webhookKey);
         console.log("✅ Parsed Webhook Event:", event); // 🔍 Log parsed event
         console.log("🔍 Event Type Received:", event.type); // Debug event type
 
@@ -76,13 +55,22 @@ router.post("/webhook", (req, res) => {
     switch (event.type) {
         case "payment_intent.succeeded":
             console.log("Payment success: ", event.data.object.id);
+            break;
+        case "payment_intent.requires_action":
+            console.log("Payment requires action: ", event.data.object.id);
+            break;
+        case "payment_intent.processing":
+            console.log("Payment is being processed", event.data.object.id);
             break
         case "payment_intent.payment_failed":
             console.log("Payment failed: ", event.data.object.id);
-            break
-        case "charge.refunded":
-            console.log("Refund processed: ", event.data.object.id);
-            break
+            break;
+        case "payment_intent.canceled":
+            console.log("Payment was canceled: ", event.data.object.id);
+            break;
+        case "checkout.session.completed":
+            console.log("Checkout session completed: ", event.data.object.id);
+            break;
         default:
             console.log(`Unhandled event type: ${event.type}`);
     }

@@ -6,7 +6,7 @@ function Checkout() {
         setloading(true);
         try {
             const cartItems = [{
-                name: "Lesson Package", price: 1, quantity: 1,
+                name: "Lesson Package", price: 100, quantity: 1,
             }];
             const response = await fetch("http://localhost:5001/stripe/create-checkout-session", {
                 method: "POST",
