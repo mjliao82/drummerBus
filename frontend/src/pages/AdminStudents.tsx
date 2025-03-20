@@ -1,14 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Filter } from 'lucide-react';
+import { Search, Plus, Filter, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import StudentDetailsModal from '../components/StudentDetailsModal';
+import PendingAccountModal from '../components/PendingAccountModal';
 
 function AdminStudents() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   const [showAddStudentModal, setShowAddStudentModal] = React.useState(false);
+  const [selectedPendingAccount, setSelectedPendingAccount] = React.useState<any>(null);
+  const [confirmDenyId, setConfirmDenyId] = React.useState<string | null>(null);
 
   if (!user || user.role !== 'admin') {
     navigate('/login');
@@ -20,23 +23,23 @@ function AdminStudents() {
     {
       name: 'John Doe',
       age: 15,
-      instruments: ['Piano', 'Guitar'],
+      instruments: ['Rock Drums', 'Jazz Drums'],
       totalLessons: 24,
       nextLesson: {
         date: '2024-03-20',
         time: '15:00',
-        instrument: 'Piano'
+        instrument: 'Rock Drums'
       },
       address: '123 Music St, Harmony City',
-      notes: 'Shows great potential in piano. Consider advanced repertoire.',
+      notes: 'Shows great potential in drum fills. Consider advanced rudiments.',
       progress: [
         {
-          instrument: 'Piano',
+          instrument: 'Rock Drums',
           level: 'Intermediate',
           lastAssessment: '2024-02-15'
         },
         {
-          instrument: 'Guitar',
+          instrument: 'Jazz Drums',
           level: 'Beginner',
           lastAssessment: '2024-02-20'
         }
@@ -45,23 +48,71 @@ function AdminStudents() {
     {
       name: 'Jane Smith',
       age: 12,
-      instruments: ['Violin'],
+      instruments: ['Beginner Drums'],
       totalLessons: 16,
       nextLesson: {
         date: '2024-03-21',
         time: '16:00',
-        instrument: 'Violin'
+        instrument: 'Beginner Drums'
       },
       address: '456 Melody Ave, Harmony City',
       progress: [
         {
-          instrument: 'Violin',
+          instrument: 'Beginner Drums',
           level: 'Beginner',
           lastAssessment: '2024-02-18'
         }
       ]
     }
   ];
+
+  // Sample pending accounts data
+  const pendingAccounts = [
+    {
+      id: '1',
+      name: 'Michael Brown',
+      email: 'michael.brown@example.com',
+      phone: '(555) 123-4567',
+      requestDate: '2024-03-18',
+      preferredStyle: 'Rock Drums',
+      experience: 'Beginner',
+      notes: 'Interested in learning rock drumming basics. Available weekday evenings.'
+    },
+    {
+      id: '2',
+      name: 'Sarah Johnson',
+      email: 'sarah.j@example.com',
+      phone: '(555) 987-6543',
+      requestDate: '2024-03-17',
+      preferredStyle: 'Jazz Drums',
+      experience: 'Intermediate',
+      notes: 'Has been playing for 2 years. Looking to improve jazz techniques.'
+    },
+    {
+      id: '3',
+      name: 'David Wilson',
+      email: 'david.w@example.com',
+      phone: '(555) 456-7890',
+      requestDate: '2024-03-15',
+      preferredStyle: 'Metal Drums',
+      experience: 'Beginner',
+      notes: 'Complete beginner interested in metal drumming. Has own electronic kit.'
+    }
+  ];
+
+  const handleApproveAccount = (accountId: string) => {
+    // In a real app, this would call your backend API to approve the account
+    console.log(`Approving account ${accountId}`);
+    // Then remove from pending list and add to students
+    setSelectedPendingAccount(null);
+  };
+
+  const handleDenyAccount = (accountId: string) => {
+    // In a real app, this would call your backend API to deny the account
+    console.log(`Denying account ${accountId}`);
+    setSelectedPendingAccount(null);
+    setConfirmDenyId(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -97,17 +148,17 @@ function AdminStudents() {
                 Filter
               </button>
               <select className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-600 focus:border-transparent">
-                <option>All Instruments</option>
-                <option>Piano</option>
-                <option>Guitar</option>
-                <option>Violin</option>
+                <option>All Styles</option>
+                <option>Rock Drums</option>
+                <option>Jazz Drums</option>
+                <option>Beginner Drums</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* Students List */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
           <div className="divide-y">
             {students.map((student, index) => (
               <div key={index} className="p-6 hover:bg-gray-50 transition">
@@ -139,12 +190,109 @@ function AdminStudents() {
           </div>
         </div>
 
+        {/* Pending Accounts Section */}
+        {pendingAccounts.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <AlertCircle className="h-6 w-6 text-amber-500 mr-2" />
+                <h2 className="text-xl font-bold text-gray-900">Pending Account Requests</h2>
+              </div>
+              <span className="bg-amber-100 text-amber-800 text-sm font-medium px-2.5 py-0.5 rounded-full">
+                {pendingAccounts.length} Pending
+              </span>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-amber-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Style</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-amber-100">
+                  {pendingAccounts.map((account) => (
+                    <tr key={account.id} className="hover:bg-amber-100/50">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{account.name}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{account.email}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{account.requestDate}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{account.preferredStyle}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          {confirmDenyId === account.id ? (
+                            <div className="flex items-center space-x-2 bg-red-50 px-2 py-1 rounded">
+                              <span className="text-red-600 text-xs">Confirm?</span>
+                              <button 
+                                onClick={() => handleDenyAccount(account.id)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Confirm deny"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDenyId(null)}
+                                className="text-gray-500 hover:text-gray-700"
+                                title="Cancel"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => handleApproveAccount(account.id)}
+                                className="text-green-600 hover:text-green-800"
+                                title="Approve account"
+                              >
+                                <CheckCircle className="h-5 w-5" />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDenyId(account.id)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Deny account"
+                              >
+                                <XCircle className="h-5 w-5" />
+                              </button>
+                              <button 
+                                onClick={() => setSelectedPendingAccount(account)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="View details"
+                              >
+                                <Eye className="h-5 w-5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Student Details Modal */}
         {selectedStudent && (
           <StudentDetailsModal
             isOpen={!!selectedStudent}
             onClose={() => setSelectedStudent(null)}
             student={selectedStudent}
+          />
+        )}
+
+        {/* Pending Account Details Modal */}
+        {selectedPendingAccount && (
+          <PendingAccountModal
+            isOpen={!!selectedPendingAccount}
+            onClose={() => setSelectedPendingAccount(null)}
+            account={selectedPendingAccount}
+            onApprove={handleApproveAccount}
+            onDeny={handleDenyAccount}
           />
         )}
 
@@ -216,14 +364,14 @@ function AdminStudents() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Instruments
+                    Drum Style Focus
                   </label>
                   <select className="w-full px-3 py-2 border rounded-md">
-                    <option>Piano</option>
-                    <option>Guitar</option>
-                    <option>Violin</option>
-                    <option>Drums</option>
-                    <option>Voice</option>
+                    <option>Beginner Drums</option>
+                    <option>Rock Drums</option>
+                    <option>Jazz Drums</option>
+                    <option>Metal Drums</option>
+                    <option>Latin Percussion</option>
                   </select>
                 </div>
                 <div>

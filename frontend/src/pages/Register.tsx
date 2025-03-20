@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Mail, Lock, User, Phone, Home } from 'lucide-react';
 
@@ -260,6 +260,18 @@ function Register() {
                         </div>
 
                         {/* Submit Button */}
+                        <div className='flex gap-1'>
+                            <p>Click on link to visit mobile number consent form: </p>
+                            <a href="https://forms.gle/vG8QzNqBrcHiGP55A" target="_blank" rel="noopener noreferrer"    style={{ 
+                                color: "#007bff", 
+                                textDecoration: "underline", 
+                                fontWeight: "bold", 
+                                cursor: "pointer"
+                            }}>
+                                Consent Form
+                            </a>
+                        </div>
+
                         <button className="w-full bg-indigo-600 text-white px-6 py-3 rounded-md text-lg font-semibold hover:bg-indigo-700 transition">
                             Register New Account
                         </button>
