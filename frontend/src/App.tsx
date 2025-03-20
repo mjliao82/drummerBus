@@ -17,7 +17,11 @@ import AdminStudents from './pages/AdminStudents';
 import AdminPayments from './pages/AdminPayments';
 import Register from './pages/Register';
 import Payments from './pages/Payments';
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import Checkout from "./pages/Checkout";
 
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
 function App() {
   const user = useAuthStore((state) => state.user);
   const showFooter = !user || user.role === 'client';
@@ -39,7 +43,18 @@ function App() {
         <Route path="/admin/calendar" element={<AdminCalendar />} />
         <Route path="/admin/students" element={<AdminStudents />} />
         <Route path="/admin/payments" element={<AdminPayments />} />
+
+        <Route 
+            path='/checkout'
+            element={
+              <Elements stripe={stripePromise}>
+                <Checkout/>
+              </Elements>
+            }
+        />
+
         <Route path="/register" element={<Register />} />
+
       </Routes>
       {showFooter && <Footer />}
     </div>
