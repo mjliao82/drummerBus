@@ -5,8 +5,8 @@ import { Mail, Lock, User, Phone, Home } from 'lucide-react';
 
 function Register() {
     let URL: string;
-    if (window.location.host === "ppub-iqventory.web.app") {
-      URL = "future urls";
+    if (window.location.host === "https://lidrummerbus.web.app/") {
+      URL = "https://drummerbus.onrender.com";
     } else {
       URL = "http://localhost:5001/";
     }
