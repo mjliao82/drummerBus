@@ -6,14 +6,18 @@ interface PaymentDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   payment: {
-    id: string;
-    amount: number;
+    id: number,
+    name: string,
+    email: string,
+    phone: string, 
+    package:string,
+    amount: string;
+    day: string;
+    time: string;
     date: string;
     method: string;
-    status: string;
-    packageName?: string;
-    lessonCount?: number;
-    transactionId?: string;
+    paymentStatus: string;
+    transactionId?:string;
   };
 }
 
@@ -22,7 +26,7 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
   onClose,
   payment
 }) => {
-  if (!payment || !payment.amount || !payment.status) {
+  if (!payment || !payment.amount || !payment.paymentStatus) {
     return null;
   }
 
@@ -31,17 +35,16 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
       <div className="space-y-6">
         <div className="flex items-center justify-between pb-6 border-b">
           <div>
-            <p className="text-2xl font-bold text-gray-900">${payment.amount.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900">${payment.amount}</p>
             <p className="text-sm text-gray-500">{payment.date}</p>
           </div>
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-            payment.status === 'completed'
+            payment.paymentStatus === 'paid'
               ? 'bg-green-100 text-green-800'
-              : payment.status === 'refunded'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
+              : 'bg-red-100 text-red-800'
+ 
           }`}>
-            {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+            {payment.paymentStatus.charAt(0).toUpperCase() + payment.paymentStatus.slice(1)}
           </span>
         </div>
 
@@ -64,24 +67,20 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
           )}
         </div>
 
-        {payment.packageName && (
+        {payment.package&& (
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-medium text-gray-900 mb-2">Package Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm font-medium text-gray-500">Package</p>
-                <p className="text-gray-900">{payment.packageName}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Lessons</p>
-                <p className="text-gray-900">{payment.lessonCount} lessons</p>
+                <p className="text-gray-900">{payment.package}</p>
               </div>
             </div>
           </div>
         )}
 
         <div className="flex justify-end space-x-4 pt-6 border-t">
-          {payment.status === 'completed' && (
+          {payment.paymentStatus === 'paid' && (
             <button className="text-red-600 hover:text-red-700 font-medium">
               Request Refund
             </button>

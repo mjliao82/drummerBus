@@ -1,13 +1,35 @@
 import React from 'react';
+import { useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Download, DollarSign, CreditCard, Users } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import PaymentDetailsModal from '../components/PaymentDetailsModal';
 
+interface Payments {
+  id: number,
+  name: string,
+  email: string,
+  phone: string, 
+  package:string,
+  amount: string;
+  day: string;
+  time: string;
+  date: string;
+  method: string;
+  paymentStatus: string;
+}
+
 function AdminPayments() {
+  let URL: string;
+  if (window.location.host === "https://lidrummerbus.web.app/") {
+    URL = "https://drummerbus.onrender.com";
+  } else {
+    URL = "http://localhost:5001/";
+  }
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [selectedPayment, setSelectedPayment] = React.useState<any>(null);
+  const [payments, setPayments] = React.useState<Payments[]>([]);
 
   if (!user || user.role !== 'admin') {
     navigate('/login');
@@ -15,30 +37,24 @@ function AdminPayments() {
   }
 
   // Sample payments data - in a real app, this would come from your backend
-  const payments = [
-    {
-      id: '1',
-      amount: 260,
-      date: '2024-03-15',
-      method: 'Credit Card',
-      status: 'completed',
-      packageName: '8 Lesson Package',
-      lessonCount: 8,
-      transactionId: 'txn_1234567890',
-      student: 'John Doe'
-    },
-    {
-      id: '2',
-      amount: 140,
-      date: '2024-03-14',
-      method: 'Credit Card',
-      status: 'completed',
-      packageName: '4 Lesson Package',
-      lessonCount: 4,
-      transactionId: 'txn_0987654321',
-      student: 'Jane Smith'
+  const fetch_payments = async () => {
+    try {
+      const response = await fetch(`${URL}fetch/payments`, {
+        method: "GET"
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch bookings");
     }
-  ];
+      const data = await response.json();
+      setPayments(data);      
+    } catch(err) {
+      console.error('Error: ', err)
+    }
+  };
+
+  useEffect(() => {
+    fetch_payments();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -147,23 +163,21 @@ function AdminPayments() {
                     {payment.date}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {payment.student}
+                    {payment.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {payment.packageName}
+                    {payment.package}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${payment.amount}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      payment.status === 'completed'
+                      payment.paymentStatus === 'paid'
                         ? 'bg-green-100 text-green-800'
-                        : payment.status === 'refunded'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                     }`}>
-                      {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                      {payment.paymentStatus .charAt(0).toUpperCase() + payment.paymentStatus .slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -171,7 +185,10 @@ function AdminPayments() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
-                      onClick={() => setSelectedPayment(payment)}
+                      onClick={() => {
+                        setSelectedPayment(payment)
+                        console.log("Selected Payment:", payment);
+                      }}
                       className="text-indigo-600 hover:text-indigo-900"
                     >
                       View Details
