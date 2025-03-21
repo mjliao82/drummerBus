@@ -81,11 +81,6 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
         )}
 
         <div className="flex justify-end space-x-4 pt-6 border-t">
-          {payment.status === 'completed' && (
-            <button className="text-red-600 hover:text-red-700 font-medium">
-              Request Refund
-            </button>
-          )}
           <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">
             Download Receipt
           </button>

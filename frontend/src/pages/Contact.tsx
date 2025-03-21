@@ -41,14 +41,10 @@ function Contact() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          {/* Scrolling Photo Gallery at the bottom */}
-          <div className="mt-16">
-            <ScrollingPhotoGallery photos={galleryPhotos} />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Get in Touch</h1>
-          <p className="text-xl text-gray-600">We'd love to hear from you</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Scrolling Photo Gallery at the bottom */}
+        <div className="mt-16">
+          <ScrollingPhotoGallery photos={galleryPhotos} />
         </div>
         
         <div className="grid lg:grid-cols-2 gap-8 mb-16">

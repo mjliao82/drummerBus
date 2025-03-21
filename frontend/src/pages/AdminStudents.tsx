@@ -243,26 +243,11 @@ function AdminStudents() {
                             </div>
                           ) : (
                             <>
-                              <button 
-                                onClick={() => handleApproveAccount(account.id)}
-                                className="text-green-600 hover:text-green-800"
-                                title="Approve account"
-                              >
-                                <CheckCircle className="h-5 w-5" />
-                              </button>
-                              <button 
-                                onClick={() => setConfirmDenyId(account.id)}
-                                className="text-red-600 hover:text-red-800"
-                                title="Deny account"
-                              >
-                                <XCircle className="h-5 w-5" />
-                              </button>
-                              <button 
+                              <button
                                 onClick={() => setSelectedPendingAccount(account)}
-                                className="text-indigo-600 hover:text-indigo-900"
-                                title="View details"
+                                className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                               >
-                                <Eye className="h-5 w-5" />
+                                View Details
                               </button>
                             </>
                           )}
