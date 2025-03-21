@@ -22,6 +22,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import Checkout from "./pages/Checkout";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
+
 function App() {
   const user = useAuthStore((state) => state.user);
   const showFooter = !user || user.role === 'client';
@@ -44,6 +45,9 @@ function App() {
         <Route path="/admin/students" element={<AdminStudents />} />
         <Route path="/admin/payments" element={<AdminPayments />} />
 
+        <Route path="/register" element={<Register />} />
+
+
         <Route 
             path='/checkout'
             element={
@@ -53,7 +57,8 @@ function App() {
             }
         />
 
-        <Route path="/register" element={<Register />} />
+
+
 
       </Routes>
       {showFooter && <Footer />}

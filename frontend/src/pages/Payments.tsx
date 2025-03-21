@@ -79,15 +79,6 @@ function Payments() {
               <DollarSign className="h-8 w-8 text-indigo-600" />
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Spent</p>
-                <p className="text-2xl font-bold text-gray-900">$660.00</p>
-              </div>
-              <CreditCard className="h-8 w-8 text-indigo-600" />
-            </div>
-          </div>
         </div>
 
         {/* Pending Payments */}
