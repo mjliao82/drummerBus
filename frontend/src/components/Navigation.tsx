@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 
 const Navigation = () => {
   // Determine the backend URL based on your host
-  let URL;
+  let URL: string;
   if (window.location.host === "ppub-iqventory.web.app") {
     URL = "future urls";
   } else {

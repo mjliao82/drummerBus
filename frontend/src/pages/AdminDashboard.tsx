@@ -262,11 +262,6 @@ function AdminDashboard() {
         onClose={() => setSelectedStudent(null)}
         student={studentDetails}
       />
-      <PaymentDetailsModal
-        isOpen={!!selectedPayment}
-        onClose={() => setSelectedPayment(null)}
-        payment={selectedPayment || {}}
-      />
     </div>
   );
 }

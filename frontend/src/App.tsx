@@ -17,6 +17,7 @@ import AdminStudents from './pages/AdminStudents';
 import AdminPayments from './pages/AdminPayments';
 import Register from './pages/Register';
 import Payments from './pages/Payments';
+import Invoice from './pages/Invoice';
 
 function App() {
   const user = useAuthStore((state) => state.user);
@@ -40,6 +41,7 @@ function App() {
         <Route path="/admin/students" element={<AdminStudents />} />
         <Route path="/admin/payments" element={<AdminPayments />} />
         <Route path="/register" element={<Register />} />
+        <Route path='/invoice' element={<Invoice />} />
       </Routes>
       {showFooter && <Footer />}
     </div>

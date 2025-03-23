@@ -16,6 +16,7 @@ interface Payments {
   time: string;
   date: string;
   method: string;
+  invoice: string;
   paymentStatus: string;
 }
 
@@ -35,6 +36,9 @@ function AdminPayments() {
     navigate('/login');
     return null;
   }
+
+  
+
 
   // Sample payments data - in a real app, this would come from your backend
   const fetch_payments = async () => {
@@ -186,7 +190,7 @@ function AdminPayments() {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => {
-                        setSelectedPayment(payment)
+                        setSelectedPayment({ ...payment });
                         console.log("Selected Payment:", payment);
                       }}
                       className="text-indigo-600 hover:text-indigo-900"
@@ -203,6 +207,7 @@ function AdminPayments() {
         {/* Payment Details Modal */}
         {selectedPayment && (
           <PaymentDetailsModal
+            key={selectedPayment.id} // Force modal to update
             isOpen={!!selectedPayment}
             onClose={() => setSelectedPayment(null)}
             payment={selectedPayment}

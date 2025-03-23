@@ -1,7 +1,7 @@
 import React from 'react';
 import Modal from './Modal';
 import { CreditCard, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
-
+import { useNavigate, Link } from 'react-router-dom';
 interface PaymentDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -16,6 +16,7 @@ interface PaymentDetailsModalProps {
     time: string;
     date: string;
     method: string;
+    invoice: string;
     paymentStatus: string;
     transactionId?:string;
   };
@@ -26,9 +27,13 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
   onClose,
   payment
 }) => {
-  if (!payment || !payment.amount || !payment.paymentStatus) {
+  const navigate = useNavigate(); // Initialize navigate function
+
+  if (!payment || !payment.paymentStatus) {
     return null;
   }
+
+  
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Payment Details">
@@ -48,12 +53,21 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="flex items-start space-x-3">
+        <div className="flex justify-between gap-6">
+          <div className="flex items-start space-x-6">
             <CreditCard className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-1" />
             <div>
               <p className="text-sm font-medium text-gray-500">Payment Method</p>
               <p className="text-gray-900">{payment.method}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Subscribed Time</p>
+              <p className="text-gray-900">{payment.day}</p>
+              <p className="text-gray-900">{payment.time}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Invoice Date</p>
+              <p className="text-gray-900">{payment.date}</p>
             </div>
           </div>
           {payment.transactionId && (
@@ -80,9 +94,11 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
         )}
 
         <div className="flex justify-end space-x-4 pt-6 border-t">
-          {payment.paymentStatus === 'paid' && (
-            <button className="text-red-600 hover:text-red-700 font-medium">
-              Request Refund
+          {payment.paymentStatus === 'unpaid' && payment.invoice==="false" && (
+            <button className="bg-green-600 px-4 text-white py-2 rounded-md hover:bg-green-700 font-medium"
+            onClick={() => navigate("/invoice", { state: { payment } })}
+            >
+              Send Invoice
             </button>
           )}
           <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">
