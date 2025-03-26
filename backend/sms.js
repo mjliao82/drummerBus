@@ -33,7 +33,6 @@ router.get("/", (req, res) => {
 // Incoming SMS handler – sends an outbound SMS reply using client.messages.create
 router.post("/", async (req, res) => {
   try {
-    // Validate incoming request data
     if (!req.body || !req.body.Body || !req.body.From || !req.body.To) {
       console.error("Incoming SMS missing required parameters:", req.body);
       return res.status(400).send("Missing required parameters.");
@@ -41,48 +40,52 @@ router.post("/", async (req, res) => {
 
     const incomingMsg = req.body.Body;
     const fromNumber = req.body.From;
-    const toNumber = req.body.To; // This should match process.env.TWILIO_PHONE_NUMBER
+    const toNumber = req.body.To; // Your Twilio number
+
     console.log(`Received SMS from ${fromNumber}: "${incomingMsg}"`);
 
-    // Handle unsubscribe request ("STOP")
+    // Handle unsubscribe ("STOP")
     if (incomingMsg.trim().toUpperCase() === "STOP") {
-      console.log(`Processing unsubscribe request from ${fromNumber}.`);
-      try {
-        const message = await client.messages.create({
-          body: "You have been unsubscribed from notifications.",
-          from: toNumber,
-          to: fromNumber,
-        });
-        console.log(
-          `Unsubscribe confirmation sent to ${fromNumber}. Message SID: ${message.sid}`
-        );
-        return res.status(200).send("Unsubscribed and confirmation message sent.");
-      } catch (err) {
-        console.error("Error sending unsubscribe confirmation:", err);
-        return res.status(500).send("Failed to send unsubscribe confirmation.");
-      }
-    }
-
-    // For all other incoming messages, send an acknowledgement reply
-    try {
-      const message = await client.messages.create({
-        body: "Your message has been received.",
+      console.log(`Unsubscribing ${fromNumber} from notifications.`);
+      // Here you would update your database or unsubscribe list.
+      // For example:
+      // await supabase.from('users').update({ subscribed: false }).eq('phone', fromNumber);
+      await client.messages.create({
+        body: "You have been unsubscribed from notifications.",
         from: toNumber,
         to: fromNumber,
       });
-      console.log(
-        `Acknowledgement sent to ${fromNumber}. Message SID: ${message.sid}`
-      );
-      return res.status(200).send("Message processed and acknowledgement sent.");
-    } catch (err) {
-      console.error("Error sending acknowledgement:", err);
-      return res.status(500).send("Failed to process message.");
+      return res.status(200).send("Unsubscribed and confirmation message sent.");
     }
+
+    // Handle resubscribe ("START")
+    if (incomingMsg.trim().toUpperCase() === "START") {
+      console.log(`Resubscribing ${fromNumber} to notifications.`);
+      // Update your database or in-memory list to mark as subscribed.
+      // For example:
+      // await supabase.from('users').update({ subscribed: true }).eq('phone', fromNumber);
+      await client.messages.create({
+        body: "You have been resubscribed to notifications.",
+        from: toNumber,
+        to: fromNumber,
+      });
+      return res.status(200).send("Resubscribed and confirmation message sent.");
+    }
+
+    // For all other incoming messages, send an acknowledgement reply
+    const message = await client.messages.create({
+      body: "Your message has been received.",
+      from: toNumber,
+      to: fromNumber,
+    });
+    console.log(`Acknowledgement sent to ${fromNumber}. Message SID: ${message.sid}`);
+    return res.status(200).send("Message processed and acknowledgement sent.");
   } catch (err) {
     console.error("Unexpected error in incoming SMS handler:", err);
     res.status(500).send("Internal server error.");
   }
 });
+
 
 /**
  * sendNotification is a reusable function to send an SMS via Twilio.
