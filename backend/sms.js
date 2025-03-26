@@ -217,9 +217,8 @@ async function checkAndSendLessonReminders() {
             continue;
           }
           // Format the lesson time in AM/PM format
-          const formattedTime = DateTime.fromFormat(lesson.time, "H:mm")
-            .setZone("America/New_York")
-            .toFormat("hh:mm a");
+          const formattedTime = DateTime.fromFormat(lesson.time, "H:mm", { zone: "America/New_York" })
+  .toFormat("hh:mm a");
           const reminderMessage = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${formattedTime} on ${lesson.day}.`;
           try {
             await sendNotification(lesson.phone, reminderMessage);
