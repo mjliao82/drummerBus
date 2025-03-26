@@ -5,6 +5,18 @@ const twilio = require("twilio");
 const supabase = require("./db");
 const { DateTime } = require("luxon");
 
+// Ensure required environment variables are present
+if (
+  !process.env.TWILIO_ACCOUNT_SID ||
+  !process.env.TWILIO_AUTH_TOKEN ||
+  !process.env.TWILIO_PHONE_NUMBER
+) {
+  console.error(
+    "Missing required environment variables. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in your .env file."
+  );
+  process.exit(1);
+}
+
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
@@ -17,38 +29,55 @@ router.use(bodyParser.urlencoded({ extended: false }));
 
 // Incoming SMS handler – sends an outbound SMS reply using client.messages.create
 router.post("/", async (req, res) => {
-  const incomingMsg = req.body.Body;
-  const fromNumber = req.body.From;
-  const toNumber = req.body.To; // Your Twilio number (should match process.env.TWILIO_PHONE_NUMBER)
-  console.log(`Received SMS from ${fromNumber}: ${incomingMsg}`);
+  try {
+    // Validate incoming request data
+    if (!req.body || !req.body.Body || !req.body.From || !req.body.To) {
+      console.error("Incoming SMS missing required parameters:", req.body);
+      return res.status(400).send("Missing required parameters.");
+    }
 
-  if (incomingMsg && incomingMsg.trim().toUpperCase() === "STOP") {
-    console.log(`Unsubscribing ${fromNumber} from notifications.`);
+    const incomingMsg = req.body.Body;
+    const fromNumber = req.body.From;
+    const toNumber = req.body.To; // This should match process.env.TWILIO_PHONE_NUMBER
+    console.log(`Received SMS from ${fromNumber}: "${incomingMsg}"`);
+
+    // Handle unsubscribe request ("STOP")
+    if (incomingMsg.trim().toUpperCase() === "STOP") {
+      console.log(`Processing unsubscribe request from ${fromNumber}.`);
+      try {
+        const message = await client.messages.create({
+          body: "You have been unsubscribed from notifications.",
+          from: toNumber,
+          to: fromNumber,
+        });
+        console.log(
+          `Unsubscribe confirmation sent to ${fromNumber}. Message SID: ${message.sid}`
+        );
+        return res.status(200).send("Unsubscribed and confirmation message sent.");
+      } catch (err) {
+        console.error("Error sending unsubscribe confirmation:", err);
+        return res.status(500).send("Failed to send unsubscribe confirmation.");
+      }
+    }
+
+    // For all other incoming messages, send an acknowledgement reply
     try {
-      await client.messages.create({
-        body: "You have been unsubscribed from notifications.",
+      const message = await client.messages.create({
+        body: "Your message has been received.",
         from: toNumber,
         to: fromNumber,
       });
-      res.status(200).send("Unsubscribed and message sent.");
+      console.log(
+        `Acknowledgement sent to ${fromNumber}. Message SID: ${message.sid}`
+      );
+      return res.status(200).send("Message processed and acknowledgement sent.");
     } catch (err) {
-      console.error("Error sending unsubscribe confirmation:", err.message);
-      res.status(500).send("Failed to send unsubscribe confirmation.");
+      console.error("Error sending acknowledgement:", err);
+      return res.status(500).send("Failed to process message.");
     }
-    return;
-  }
-
-  // For all other incoming messages, send an acknowledgement reply
-  try {
-    await client.messages.create({
-      body: "Your message has been received.",
-      from: toNumber,
-      to: fromNumber,
-    });
-    res.status(200).send("Message processed and response sent.");
   } catch (err) {
-    console.error("Error processing message:", err.message);
-    res.status(500).send("Failed to process message.");
+    console.error("Unexpected error in incoming SMS handler:", err);
+    res.status(500).send("Internal server error.");
   }
 });
 
@@ -64,10 +93,12 @@ async function sendNotification(to, message) {
       from: process.env.TWILIO_PHONE_NUMBER,
       to: to,
     });
-    console.log(`Notification sent to ${to}: ${message}`);
+    console.log(
+      `Notification sent to ${to}: "${message}". Message SID: ${response.sid}`
+    );
     return response;
   } catch (error) {
-    console.error("Failed to send notification:", error);
+    console.error(`Failed to send notification to ${to}:`, error);
     throw error;
   }
 }
@@ -98,75 +129,98 @@ const dayMapping = {
  * the lesson start, a reminder SMS is sent.
  */
 async function checkAndSendLessonReminders() {
+  console.log("Starting lesson reminder check...");
   try {
     const { data: lessons, error } = await supabase.from("lessons").select("*");
     if (error) {
-      console.error("Error fetching lessons for reminders:", error);
+      console.error("Error fetching lessons from database:", error);
       return;
     }
-
+    if (!lessons || lessons.length === 0) {
+      console.log("No lessons found in database for reminders.");
+      return;
+    }
+    console.log(`Fetched ${lessons.length} lesson(s) from database.`);
     const now = DateTime.local();
 
-    lessons.forEach(async (lesson) => {
-      // Ensure the lesson has a valid day.
-      const lessonDay = lesson.day.toLowerCase();
-      const targetWeekday = dayMapping[lessonDay];
-      if (!targetWeekday) {
-        console.error(`Invalid lesson day "${lesson.day}" for lesson id ${lesson.id}`);
-        return;
-      }
-
-      // Parse the lesson time (expected format "HH:mm", e.g., "10:00").
-      const timeParts = lesson.time.split(":");
-      const lessonHour = parseInt(timeParts[0], 10);
-      const lessonMinute = timeParts.length > 1 ? parseInt(timeParts[1], 10) : 0;
-
-      // Calculate days difference between now and the lesson's target weekday.
-      const diffDays = (targetWeekday - now.weekday + 7) % 7;
-      // Create the DateTime for the next occurrence.
-      let nextOccurrence = now.plus({ days: diffDays }).set({
-        hour: lessonHour,
-        minute: lessonMinute,
-        second: 0,
-        millisecond: 0,
-      });
-
-      // If the occurrence today has already passed, schedule for next week.
-      if (nextOccurrence < now) {
-        nextOccurrence = nextOccurrence.plus({ days: 7 });
-      }
-
-      // Determine the difference in minutes between the next occurrence and now.
-      const diffMinutes = nextOccurrence.diff(now, "minutes").minutes;
-
-      // If it's about one hour away (with a tolerance of ±1 minute)...
-      if (diffMinutes >= 59 && diffMinutes <= 61) {
-        // Create a unique key for this lesson occurrence.
-        const occurrenceKey = `${lesson.id}-${nextOccurrence.toISODate()}`;
-
-        // Avoid sending duplicate reminders for the same occurrence.
-        if (sentReminders.has(occurrenceKey)) return;
-
-        // Construct the reminder message.
-        const message = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${lesson.time} on ${lesson.day}.`;
-
-        // Check for a phone number. It should be stored in E.164 format (e.g., "+15854305010").
-        if (!lesson.phone) {
-          console.error(`No phone number found for lesson id ${lesson.id}. Reminder not sent.`);
-          return;
+    // Iterate using a for-of loop to properly handle asynchronous operations
+    for (const lesson of lessons) {
+      try {
+        if (!lesson.day || !lesson.time) {
+          console.warn(`Lesson id ${lesson.id} is missing day or time information.`);
+          continue;
+        }
+        const lessonDay = lesson.day.toLowerCase();
+        const targetWeekday = dayMapping[lessonDay];
+        if (!targetWeekday) {
+          console.error(`Invalid lesson day "${lesson.day}" for lesson id ${lesson.id}`);
+          continue;
         }
 
-        try {
-          await sendNotification(lesson.phone, message);
-          console.log(
-            `Sent reminder for lesson id ${lesson.id} (occurring on ${nextOccurrence.toISODate()}).`
-          );
-          sentReminders.add(occurrenceKey);
-        } catch (err) {
-          console.error(`Error sending reminder for lesson id ${lesson.id}:`, err);
+        // Parse the lesson time (expected format "HH:mm", e.g., "10:00")
+        const timeParts = lesson.time.split(":");
+        if (timeParts.length < 1) {
+          console.error(`Invalid lesson time format "${lesson.time}" for lesson id ${lesson.id}`);
+          continue;
         }
+        const lessonHour = parseInt(timeParts[0], 10);
+        const lessonMinute = timeParts.length > 1 ? parseInt(timeParts[1], 10) : 0;
+
+        // Calculate days difference between now and the lesson's target weekday.
+        const diffDays = (targetWeekday - now.weekday + 7) % 7;
+        // Create the DateTime for the next occurrence.
+        let nextOccurrence = now.plus({ days: diffDays }).set({
+          hour: lessonHour,
+          minute: lessonMinute,
+          second: 0,
+          millisecond: 0,
+        });
+
+        // If today's occurrence has already passed, schedule for next week.
+        if (nextOccurrence < now) {
+          nextOccurrence = nextOccurrence.plus({ days: 7 });
+        }
+
+        // Determine the difference in minutes between now and the next occurrence.
+        const diffMinutes = nextOccurrence.diff(now, "minutes").minutes;
+        console.log(
+          `Lesson id ${lesson.id}: Next occurrence at ${nextOccurrence.toISO()} (in ${diffMinutes.toFixed(
+            2
+          )} minutes)`
+        );
+
+        // If it's about one hour away (with a tolerance of ±1 minute)...
+        if (diffMinutes >= 59 && diffMinutes <= 61) {
+          // Create a unique key for this lesson occurrence.
+          const occurrenceKey = `${lesson.id}-${nextOccurrence.toISODate()}`;
+
+          // Skip if reminder already sent for this occurrence.
+          if (sentReminders.has(occurrenceKey)) {
+            console.log(`Reminder already sent for lesson id ${lesson.id} on ${nextOccurrence.toISODate()}.`);
+            continue;
+          }
+
+          // Ensure the lesson has a phone number.
+          if (!lesson.phone) {
+            console.error(`No phone number found for lesson id ${lesson.id}. Reminder not sent.`);
+            continue;
+          }
+
+          const reminderMessage = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${lesson.time} on ${lesson.day}.`;
+          try {
+            await sendNotification(lesson.phone, reminderMessage);
+            console.log(
+              `Sent reminder for lesson id ${lesson.id} (occurring on ${nextOccurrence.toISODate()}).`
+            );
+            sentReminders.add(occurrenceKey);
+          } catch (err) {
+            console.error(`Error sending reminder for lesson id ${lesson.id}:`, err);
+          }
+        }
+      } catch (innerErr) {
+        console.error(`Error processing lesson id ${lesson.id}:`, innerErr);
       }
-    });
+    }
   } catch (err) {
     console.error("Unexpected error in checkAndSendLessonReminders:", err);
   }
