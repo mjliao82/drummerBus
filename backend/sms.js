@@ -144,9 +144,10 @@ async function checkAndSendLessonReminders() {
       return;
     }
     console.log(`Fetched ${lessons.length} lesson(s) from database.`);
-    const now = DateTime.local();
+    
+    // Set the current time to Eastern Time
+    const now = DateTime.local().setZone('America/New_York');
 
-    // Iterate using a for-of loop to properly handle asynchronous operations
     for (const lesson of lessons) {
       try {
         if (!lesson.day || !lesson.time) {
@@ -171,7 +172,7 @@ async function checkAndSendLessonReminders() {
 
         // Calculate days difference between now and the lesson's target weekday.
         const diffDays = (targetWeekday - now.weekday + 7) % 7;
-        // Create the DateTime for the next occurrence.
+        // Create the DateTime for the next occurrence in EST.
         let nextOccurrence = now.plus({ days: diffDays }).set({
           hour: lessonHour,
           minute: lessonMinute,
@@ -187,23 +188,17 @@ async function checkAndSendLessonReminders() {
         // Determine the difference in minutes between now and the next occurrence.
         const diffMinutes = nextOccurrence.diff(now, "minutes").minutes;
         console.log(
-          `Lesson id ${lesson.id}: Next occurrence at ${nextOccurrence.toISO()} (in ${diffMinutes.toFixed(
-            2
-          )} minutes)`
+          `Lesson id ${lesson.id}: Next occurrence at ${nextOccurrence.toISO()} (in ${diffMinutes.toFixed(2)} minutes)`
         );
 
         // If it's about one hour away (with a tolerance of ±1 minute)...
         if (diffMinutes >= 59 && diffMinutes <= 61) {
-          // Create a unique key for this lesson occurrence.
           const occurrenceKey = `${lesson.id}-${nextOccurrence.toISODate()}`;
-
-          // Skip if reminder already sent for this occurrence.
           if (sentReminders.has(occurrenceKey)) {
             console.log(`Reminder already sent for lesson id ${lesson.id} on ${nextOccurrence.toISODate()}.`);
             continue;
           }
 
-          // Ensure the lesson has a phone number.
           if (!lesson.phone) {
             console.error(`No phone number found for lesson id ${lesson.id}. Reminder not sent.`);
             continue;
@@ -228,6 +223,7 @@ async function checkAndSendLessonReminders() {
     console.error("Unexpected error in checkAndSendLessonReminders:", err);
   }
 }
+
 
 // Schedule the lesson reminder check to run every minute.
 setInterval(checkAndSendLessonReminders, 60000);
