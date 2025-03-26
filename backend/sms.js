@@ -26,7 +26,10 @@ const router = express.Router();
 
 // Use bodyParser to parse form-encoded POST requests (from Twilio)
 router.use(bodyParser.urlencoded({ extended: false }));
-
+router.get("/", (req, res) => {
+  console.log("GET /sms hit");
+  res.send("GET /sms works!");
+});
 // Incoming SMS handler – sends an outbound SMS reply using client.messages.create
 router.post("/", async (req, res) => {
   try {
