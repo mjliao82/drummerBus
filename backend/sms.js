@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: "./backend/.env" });
 const express = require("express");
 const bodyParser = require("body-parser");
 const twilio = require("twilio");
@@ -15,26 +15,41 @@ const router = express.Router();
 // Use bodyParser to parse form-encoded POST requests (from Twilio)
 router.use(bodyParser.urlencoded({ extended: false }));
 
-// Incoming SMS handler – handles unsubscribe requests like "STOP"
+// Incoming SMS handler – sends an outbound SMS reply using client.messages.create
 router.post("/", async (req, res) => {
   const incomingMsg = req.body.Body;
   const fromNumber = req.body.From;
+  const toNumber = req.body.To; // Your Twilio number (should match process.env.TWILIO_PHONE_NUMBER)
   console.log(`Received SMS from ${fromNumber}: ${incomingMsg}`);
 
   if (incomingMsg && incomingMsg.trim().toUpperCase() === "STOP") {
     console.log(`Unsubscribing ${fromNumber} from notifications.`);
-    // OPTIONAL: Update your DB to mark this phone number as unsubscribed.
-    res.type("text/xml");
-    return res.send(
-      `<Response><Message>You have been unsubscribed from notifications.</Message></Response>`
-    );
+    try {
+      await client.messages.create({
+        body: "You have been unsubscribed from notifications.",
+        from: toNumber,
+        to: fromNumber,
+      });
+      res.status(200).send("Unsubscribed and message sent.");
+    } catch (err) {
+      console.error("Error sending unsubscribe confirmation:", err.message);
+      res.status(500).send("Failed to send unsubscribe confirmation.");
+    }
+    return;
   }
 
-  // Acknowledge any other incoming message.
-  res.type("text/xml");
-  res.send(
-    `<Response><Message>Your message has been received.</Message></Response>`
-  );
+  // For all other incoming messages, send an acknowledgement reply
+  try {
+    await client.messages.create({
+      body: "Your message has been received.",
+      from: toNumber,
+      to: fromNumber,
+    });
+    res.status(200).send("Message processed and response sent.");
+  } catch (err) {
+    console.error("Error processing message:", err.message);
+    res.status(500).send("Failed to process message.");
+  }
 });
 
 /**
@@ -46,7 +61,7 @@ async function sendNotification(to, message) {
   try {
     const response = await client.messages.create({
       body: message,
-      from: process.env.TWILIO_PHONE_NUMBER, // Updated environment variable name
+      from: process.env.TWILIO_PHONE_NUMBER,
       to: to,
     });
     console.log(`Notification sent to ${to}: ${message}`);
@@ -135,7 +150,7 @@ async function checkAndSendLessonReminders() {
         // Construct the reminder message.
         const message = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${lesson.time} on ${lesson.day}.`;
 
-        // Check for a phone number. It should be stored in E.164 format (e.g., +15854305010).
+        // Check for a phone number. It should be stored in E.164 format (e.g., "+15854305010").
         if (!lesson.phone) {
           console.error(`No phone number found for lesson id ${lesson.id}. Reminder not sent.`);
           return;
