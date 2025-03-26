@@ -162,6 +162,12 @@ async function checkAndSendLessonReminders() {
 
     for (const lesson of lessons) {
       try {
+        // Only send reminders for lessons with a status of "confirmed"
+        if (!lesson.status || lesson.status.toLowerCase() !== "confirmed") {
+          console.log(`Skipping lesson id ${lesson.id} as status is not confirmed.`);
+          continue;
+        }
+        
         if (!lesson.day || !lesson.time) {
           console.warn(`Lesson id ${lesson.id} is missing day or time information.`);
           continue;
@@ -218,7 +224,7 @@ async function checkAndSendLessonReminders() {
           }
           // Format the lesson time in AM/PM format
           const formattedTime = DateTime.fromFormat(lesson.time, "H:mm", { zone: "America/New_York" })
-  .toFormat("hh:mm a");
+            .toFormat("hh:mm a");
           const reminderMessage = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${formattedTime} on ${lesson.day}.`;
           try {
             await sendNotification(lesson.phone, reminderMessage);
