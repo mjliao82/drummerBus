@@ -26,11 +26,14 @@ const router = express.Router();
 
 // Use bodyParser to parse form-encoded POST requests (from Twilio)
 router.use(bodyParser.urlencoded({ extended: false }));
+
+// GET route for testing
 router.get("/", (req, res) => {
   console.log("GET /sms hit");
   res.send("GET /sms works!");
 });
-// Incoming SMS handler – sends an outbound SMS reply using client.messages.create
+
+// Incoming SMS handler – processes unsubscribe ("STOP"), resubscribe ("START"), and sends acknowledgement for other messages.
 router.post("/", async (req, res) => {
   try {
     if (!req.body || !req.body.Body || !req.body.From || !req.body.To) {
@@ -40,16 +43,14 @@ router.post("/", async (req, res) => {
 
     const incomingMsg = req.body.Body;
     const fromNumber = req.body.From;
-    const toNumber = req.body.To; // Your Twilio number
+    const toNumber = req.body.To; // Should match process.env.TWILIO_PHONE_NUMBER
 
     console.log(`Received SMS from ${fromNumber}: "${incomingMsg}"`);
 
     // Handle unsubscribe ("STOP")
     if (incomingMsg.trim().toUpperCase() === "STOP") {
       console.log(`Unsubscribing ${fromNumber} from notifications.`);
-      // Here you would update your database or unsubscribe list.
-      // For example:
-      // await supabase.from('users').update({ subscribed: false }).eq('phone', fromNumber);
+      // Update your database or in-memory unsubscribe list here if needed.
       await client.messages.create({
         body: "You have been unsubscribed from notifications.",
         from: toNumber,
@@ -62,8 +63,6 @@ router.post("/", async (req, res) => {
     if (incomingMsg.trim().toUpperCase() === "START") {
       console.log(`Resubscribing ${fromNumber} to notifications.`);
       // Update your database or in-memory list to mark as subscribed.
-      // For example:
-      // await supabase.from('users').update({ subscribed: true }).eq('phone', fromNumber);
       await client.messages.create({
         body: "You have been resubscribed to notifications.",
         from: toNumber,
@@ -72,7 +71,7 @@ router.post("/", async (req, res) => {
       return res.status(200).send("Resubscribed and confirmation message sent.");
     }
 
-    // For all other incoming messages, send an acknowledgement reply
+    // For all other incoming messages, send an acknowledgement reply.
     const message = await client.messages.create({
       body: "Your message has been received.",
       from: toNumber,
@@ -82,10 +81,9 @@ router.post("/", async (req, res) => {
     return res.status(200).send("Message processed and acknowledgement sent.");
   } catch (err) {
     console.error("Unexpected error in incoming SMS handler:", err);
-    res.status(500).send("Internal server error.");
+    return res.status(500).send("Internal server error.");
   }
 });
-
 
 /**
  * sendNotification is a reusable function to send an SMS via Twilio.
@@ -129,12 +127,23 @@ const dayMapping = {
 };
 
 /**
+ * Concurrency flag to prevent overlapping reminder checks.
+ */
+let isReminderCheckRunning = false;
+
+/**
  * checkAndSendLessonReminders queries the lessons table and, for each lesson,
  * calculates the next occurrence (weekly) based on the lesson's day and time.
  * If the current time is approximately one hour (±1 minute tolerance) before
  * the lesson start, a reminder SMS is sent.
+ * All date-time calculations are done in Eastern Time.
  */
 async function checkAndSendLessonReminders() {
+  if (isReminderCheckRunning) {
+    console.log("Reminder check already running. Skipping this cycle.");
+    return;
+  }
+  isReminderCheckRunning = true;
   console.log("Starting lesson reminder check...");
   try {
     const { data: lessons, error } = await supabase.from("lessons").select("*");
@@ -149,7 +158,7 @@ async function checkAndSendLessonReminders() {
     console.log(`Fetched ${lessons.length} lesson(s) from database.`);
     
     // Set the current time to Eastern Time
-    const now = DateTime.local().setZone('America/New_York');
+    const now = DateTime.local().setZone("America/New_York");
 
     for (const lesson of lessons) {
       try {
@@ -188,31 +197,33 @@ async function checkAndSendLessonReminders() {
           nextOccurrence = nextOccurrence.plus({ days: 7 });
         }
 
-        // Determine the difference in minutes between now and the next occurrence.
+        // Calculate the difference in minutes between now and the next occurrence.
         const diffMinutes = nextOccurrence.diff(now, "minutes").minutes;
         console.log(
-          `Lesson id ${lesson.id}: Next occurrence at ${nextOccurrence.toISO()} (in ${diffMinutes.toFixed(2)} minutes)`
+          `Lesson id ${lesson.id}: Next occurrence at ${nextOccurrence.toFormat("MM/dd/yyyy hh:mm a")} (in ${diffMinutes.toFixed(2)} minutes)`
         );
 
-        // If it's about one hour away (with a tolerance of ±1 minute)...
-        if (diffMinutes >= 59 && diffMinutes <= 61) {
+        // Use a tolerance of 59 to 60 minutes
+        if (diffMinutes >= 59 && diffMinutes <= 60) {
           const occurrenceKey = `${lesson.id}-${nextOccurrence.toISODate()}`;
           if (sentReminders.has(occurrenceKey)) {
-            console.log(`Reminder already sent for lesson id ${lesson.id} on ${nextOccurrence.toISODate()}.`);
+            console.log(
+              `Duplicate detected: Reminder already sent for lesson id ${lesson.id} on ${nextOccurrence.toISODate()}.`
+            );
             continue;
           }
-
           if (!lesson.phone) {
             console.error(`No phone number found for lesson id ${lesson.id}. Reminder not sent.`);
             continue;
           }
-
-          const reminderMessage = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${lesson.time} on ${lesson.day}.`;
+          // Format the lesson time in AM/PM format
+          const formattedTime = DateTime.fromFormat(lesson.time, "H:mm")
+            .setZone("America/New_York")
+            .toFormat("hh:mm a");
+          const reminderMessage = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${formattedTime} on ${lesson.day}.`;
           try {
             await sendNotification(lesson.phone, reminderMessage);
-            console.log(
-              `Sent reminder for lesson id ${lesson.id} (occurring on ${nextOccurrence.toISODate()}).`
-            );
+            console.log(`Sent reminder for lesson id ${lesson.id} (occurring on ${nextOccurrence.toISODate()}).`);
             sentReminders.add(occurrenceKey);
           } catch (err) {
             console.error(`Error sending reminder for lesson id ${lesson.id}:`, err);
@@ -224,9 +235,10 @@ async function checkAndSendLessonReminders() {
     }
   } catch (err) {
     console.error("Unexpected error in checkAndSendLessonReminders:", err);
+  } finally {
+    isReminderCheckRunning = false;
   }
 }
-
 
 // Schedule the lesson reminder check to run every minute.
 setInterval(checkAndSendLessonReminders, 60000);
