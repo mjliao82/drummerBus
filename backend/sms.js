@@ -3,6 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const twilio = require("twilio");
 const supabase = require("./db");
+const { DateTime } = require("luxon");
 
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
@@ -11,19 +12,15 @@ const client = twilio(
 
 const router = express.Router();
 
-// Use bodyParser to parse Twilio's form-encoded POST requests
+// Use bodyParser to parse form-encoded POST requests (from Twilio)
 router.use(bodyParser.urlencoded({ extended: false }));
 
-// In-memory set to track which lessons have been sent a reminder
-const remindedLessons = new Set();
-
-// Handle incoming messages from Twilio
+// Incoming SMS handler – handles unsubscribe requests like "STOP"
 router.post("/", async (req, res) => {
   const incomingMsg = req.body.Body;
   const fromNumber = req.body.From;
   console.log(`Received SMS from ${fromNumber}: ${incomingMsg}`);
 
-  // If the message is "STOP", unsubscribe the client
   if (incomingMsg && incomingMsg.trim().toUpperCase() === "STOP") {
     console.log(`Unsubscribing ${fromNumber} from notifications.`);
     // OPTIONAL: Update your DB to mark this phone number as unsubscribed.
@@ -33,7 +30,7 @@ router.post("/", async (req, res) => {
     );
   }
 
-  // Otherwise, simply acknowledge receipt.
+  // Acknowledge any other incoming message.
   res.type("text/xml");
   res.send(
     `<Response><Message>Your message has been received.</Message></Response>`
@@ -42,14 +39,14 @@ router.post("/", async (req, res) => {
 
 /**
  * sendNotification is a reusable function to send an SMS via Twilio.
- * @param {string} to - Recipient phone number in E.164 format.
+ * @param {string} to - Recipient phone number (E.164 format, e.g. "+15854305010").
  * @param {string} message - Message content.
  */
 async function sendNotification(to, message) {
   try {
     const response = await client.messages.create({
       body: message,
-      from: process.env.TWILIO_PHONE, // Ensure TWILIO_PHONE is set in your .env file
+      from: process.env.TWILIO_PHONE_NUMBER, // Updated environment variable name
       to: to,
     });
     console.log(`Notification sent to ${to}: ${message}`);
@@ -61,14 +58,29 @@ async function sendNotification(to, message) {
 }
 
 /**
- * checkAndSendLessonReminders queries the lessons table and sends a reminder SMS.
- * Since your lessons table no longer contains scheduling fields or a reminder_sent flag,
- * this implementation sends a reminder immediately when a lesson is found.
- *
- * It uses an in-memory set to ensure each lesson (by its id) is notified only once.
- *
- * NOTE: Without scheduling info (such as lesson date/time), the "one hour before" behavior
- * cannot be enforced. For proper scheduling, you’d need to extend your schema.
+ * In-memory set to track which lesson occurrences have been notified.
+ * Each key is a string in the format: "<lesson_id>-<occurrence ISO date>".
+ */
+const sentReminders = new Set();
+
+/**
+ * Mapping of day names to Luxon weekday numbers (Monday=1, …, Sunday=7).
+ */
+const dayMapping = {
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+  sunday: 7,
+};
+
+/**
+ * checkAndSendLessonReminders queries the lessons table and, for each lesson,
+ * calculates the next occurrence (weekly) based on the lesson's day and time.
+ * If the current time is approximately one hour (±1 minute tolerance) before
+ * the lesson start, a reminder SMS is sent.
  */
 async function checkAndSendLessonReminders() {
   try {
@@ -78,21 +90,66 @@ async function checkAndSendLessonReminders() {
       return;
     }
 
+    const now = DateTime.local();
+
     lessons.forEach(async (lesson) => {
-      // Skip if this lesson has already been notified.
-      if (remindedLessons.has(lesson.id)) return;
+      // Ensure the lesson has a valid day.
+      const lessonDay = lesson.day.toLowerCase();
+      const targetWeekday = dayMapping[lessonDay];
+      if (!targetWeekday) {
+        console.error(`Invalid lesson day "${lesson.day}" for lesson id ${lesson.id}`);
+        return;
+      }
 
-      // Construct a reminder message.
-      // (You can adjust the message based on lesson details or notification type.)
-      const message = `Reminder: Your lesson is scheduled to start in one hour.`;
+      // Parse the lesson time (expected format "HH:mm", e.g., "10:00").
+      const timeParts = lesson.time.split(":");
+      const lessonHour = parseInt(timeParts[0], 10);
+      const lessonMinute = timeParts.length > 1 ? parseInt(timeParts[1], 10) : 0;
 
-      try {
-        await sendNotification(lesson.phone, message);
-        console.log(`Sent reminder for lesson id ${lesson.id}`);
-        // Mark the lesson as having been reminded to avoid duplicate notifications.
-        remindedLessons.add(lesson.id);
-      } catch (sendError) {
-        console.error(`Error sending reminder for lesson id ${lesson.id}:`, sendError);
+      // Calculate days difference between now and the lesson's target weekday.
+      const diffDays = (targetWeekday - now.weekday + 7) % 7;
+      // Create the DateTime for the next occurrence.
+      let nextOccurrence = now.plus({ days: diffDays }).set({
+        hour: lessonHour,
+        minute: lessonMinute,
+        second: 0,
+        millisecond: 0,
+      });
+
+      // If the occurrence today has already passed, schedule for next week.
+      if (nextOccurrence < now) {
+        nextOccurrence = nextOccurrence.plus({ days: 7 });
+      }
+
+      // Determine the difference in minutes between the next occurrence and now.
+      const diffMinutes = nextOccurrence.diff(now, "minutes").minutes;
+
+      // If it's about one hour away (with a tolerance of ±1 minute)...
+      if (diffMinutes >= 59 && diffMinutes <= 61) {
+        // Create a unique key for this lesson occurrence.
+        const occurrenceKey = `${lesson.id}-${nextOccurrence.toISODate()}`;
+
+        // Avoid sending duplicate reminders for the same occurrence.
+        if (sentReminders.has(occurrenceKey)) return;
+
+        // Construct the reminder message.
+        const message = `Reminder: Your ${lesson.instrument} lesson is scheduled at ${lesson.time} on ${lesson.day}.`;
+
+        // Check for a phone number. It should be stored in E.164 format (e.g., +15854305010).
+        if (!lesson.phone) {
+          console.error(`No phone number found for lesson id ${lesson.id}. Reminder not sent.`);
+          return;
+        }
+
+        try {
+          await sendNotification(lesson.phone, message);
+          console.log(
+            `Sent reminder for lesson id ${lesson.id} (occurring on ${nextOccurrence.toISODate()}).`
+          );
+          sentReminders.add(occurrenceKey);
+        } catch (err) {
+          console.error(`Error sending reminder for lesson id ${lesson.id}:`, err);
+        }
       }
     });
   } catch (err) {
@@ -100,7 +157,7 @@ async function checkAndSendLessonReminders() {
   }
 }
 
-// Schedule the reminder check to run every minute.
+// Schedule the lesson reminder check to run every minute.
 setInterval(checkAndSendLessonReminders, 60000);
 
 module.exports = { router, sendNotification };
