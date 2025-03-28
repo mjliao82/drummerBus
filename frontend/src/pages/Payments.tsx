@@ -1,13 +1,54 @@
 import React from 'react';
+import { useEffect } from "react";
+
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { CreditCard, DollarSign, Clock, CheckCircle } from 'lucide-react';
 import PaymentDetailsModal from '../components/PaymentDetailsModal';
+import socket from '../utils/socket';
+
+interface Payments {
+  id: number,
+  name: string,
+  email: string,
+  phone: string, 
+  package:string,
+  amount: string;
+  day: string;
+  time: string;
+  date: string;
+  method: string;
+  invoice: string;
+  paymentStatus: string;
+}
+
+interface History {
+  id: number,
+  name: string,
+  email: string,
+  phone: string, 
+  package:string,
+  amount: string;
+  day: string;
+  time: string;
+  date: string;
+  method: string;
+  invoice: string;
+  paymentStatus: string;
+}
 
 function Payments() {
+  let URL: string;
+  if (window.location.host === "https://lidrummerbus.web.app/") {
+    URL = "https://drummerbus.onrender.com";
+  } else {
+    URL = "http://localhost:5001/";
+  }
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [selectedPayment, setSelectedPayment] = React.useState<any>(null);
+  const [paymentHistory, setPaymentHistory] = React.useState<History[]>([]);
+  const [pendingPayments, setPendingPayments] = React.useState<Payments[]>([]);
 
   React.useEffect(() => {
     if (!user) {
@@ -17,40 +58,49 @@ function Payments() {
 
   if (!user) return null;
 
-  const paymentHistory = [
-    {
-      id: '1',
-      amount: 260,
-      date: '2024-03-15',
-      method: 'Credit Card',
-      status: 'completed',
-      packageName: '8 Lesson Package',
-      lessonCount: 8,
-      transactionId: 'txn_1234567890'
-    },
-    {
-      id: '2',
-      amount: 140,
-      date: '2024-02-28',
-      method: 'Credit Card',
-      status: 'completed',
-      packageName: '4 Lesson Package',
-      lessonCount: 4,
-      transactionId: 'txn_0987654321'
-    }
-  ];
+  const fetch_payments = async () => {
+    try {
+        const response = await fetch(`${URL}fetch/payments`, {
+            method: "GET"
+        });
 
-  const pendingPayments = [
-    {
-      id: '3',
-      amount: 260,
-      date: '2024-03-20',
-      packageName: '8 Lesson Package',
-      lessonCount: 8,
-      dueDate: '2024-03-25'
-    }
-  ];
+        if (!response.ok) {
+            throw new Error("Failed to fetch payments");
+        }
+        const data = await response.json(); 
+        console.log(data)
+        const userPayments = data.filter((payment: { name: string; }) => payment.name === user.name);
+        const pending = userPayments.filter((payment: { paymentStatus: string; invoice: string; }) => payment.paymentStatus === "unpaid" && payment.invoice === "true");
+        const history = userPayments.filter((payment: { paymentStatus: string; }) => payment.paymentStatus === "paid");
+        setPendingPayments(pending);
+        setPaymentHistory(history);
 
+    } catch (err) {
+        console.error('Error:', err);
+    }
+  };
+  useEffect(() => {
+    fetch_payments();
+  }, []);
+
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "Recieve Invoice") {
+        setPendingPayments((prev) => [...prev, data.payload]);
+      }
+    };
+
+    socket.addEventListener("message", handleMessage);
+    
+    return () => {
+      socket.removeEventListener("message", handleMessage);
+    };
+  }, []);
+
+  
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
@@ -102,12 +152,12 @@ function Payments() {
                   <div key={payment.id} className="py-4 first:pt-0 last:pb-0">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-gray-900">{payment.packageName}</p>
-                        <p className="text-sm text-gray-600">Due by {payment.dueDate}</p>
+                        <p className="font-semibold text-gray-900">{payment.package}</p>
+                        {/* <p className="text-sm text-gray-600">Due by {payment.dueDate}</p> */}
                       </div>
                       <div className="flex items-center space-x-4">
                         <span className="text-lg font-semibold text-gray-900">
-                          ${payment.amount.toFixed(2)}
+                          ${payment.amount}
                         </span>
                         <button
                           onClick={() => navigate('/checkout')}
@@ -139,7 +189,7 @@ function Payments() {
                         <CheckCircle className="h-6 w-6 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">{payment.packageName}</p>
+                        <p className="font-semibold text-gray-900">{payment.package}</p>
                         <p className="text-sm text-gray-600">
                           {payment.date} • {payment.method}
                         </p>
@@ -147,7 +197,7 @@ function Payments() {
                     </div>
                     <div className="flex items-center space-x-4">
                       <span className="text-lg font-semibold text-gray-900">
-                        ${payment.amount.toFixed(2)}
+                        ${payment.amount}
                       </span>
                       <button
                         onClick={() => setSelectedPayment(payment)}

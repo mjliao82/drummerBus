@@ -47,7 +47,7 @@ wss.on('connection', (ws) => {
 
         console.log(' Received:', data.type);
         console.log(data)
-        if (!data.name || !data.id || !data.type) {
+        if (!data.name || !data.type) {
             ws.send(JSON.stringify({ error: "Missing required data fields!" }));
             return;
         }
@@ -104,12 +104,32 @@ wss.on('connection', (ws) => {
                 console.log("Processing invoice")
                 const { error } = await supabase 
                 .from('payments')
-                .update({ invoice: "true" })
-                .match({ id: data.id });
+                .update({ 
+                    invoice: "true",
+                    amount: data.amount,
+                    date: data.date, 
+                    package: data.packages
+                })
+                .match({ id: data.id });  
             } catch (err) {
                 console.error("Unexpected Database Error:", err);
                 ws.send(JSON.stringify({ error: "Unexpected error while storing invoice." }));
             }
+            const InvoiceData = {
+                type: "Recieve Invoice",
+                payload: {
+                    name: data.name,
+                    amount: data.amount,
+                    date: data.date, 
+                    package: data.packages
+                }
+            }
+            wss.clients.forEach((client) => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify(InvoiceData));
+                }
+            });
+
         } else if (data.type == "Booking confirmation") {
             try {
                 const { error } = await supabase 
@@ -139,6 +159,44 @@ wss.on('connection', (ws) => {
                         } catch (err) {
                             console.error(err);
                             console.log("error inserting into payments table in the DB")
+                        }
+                    } else if (data.status == "Declined") {
+                        try {
+                            // Check if the payment exists before deleting
+                            const { data: paymentExists, error: checkError } = await supabase
+                                .from('payments')
+                                .select('*')
+                                .match({
+                                    name: data.name,
+                                    day: data.day,
+                                    time: data.time
+                                });
+            
+                            if (checkError) {
+                                throw new Error(checkError.message);
+                            }
+            
+                            if (paymentExists && paymentExists.length > 0) {
+                                // Delete the payment record
+                                const { error: deleteError } = await supabase
+                                    .from('payments')
+                                    .delete()
+                                    .match({
+                                        name: data.name,
+                                        day: data.day,
+                                        time: data.time
+                                    });
+            
+                                if (deleteError) {
+                                    throw new Error(deleteError.message);
+                                } else {
+                                    console.log(`Deleted payment record for ${data.name} on ${data.day} at ${data.time}`);
+                                }
+                            } else {
+                                console.log(`No payment record found for ${data.name} on ${data.day} at ${data.time}`);
+                            }
+                        } catch (err) {
+                            console.error("Error deleting payment record:", err);
                         }
                     }
                 if (error) {
