@@ -45,12 +45,6 @@ function Home() {
               >
                 Request a Lesson
               </button>
-              <button 
-                onClick={() => navigate('/pricing')}
-                className="bg-white text-indigo-600 px-8 py-3 rounded-md text-lg font-semibold hover:bg-gray-100 transition"
-              >
-                View Pricing
-              </button>
             </div>
           </div>
         </div>

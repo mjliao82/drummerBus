@@ -7,7 +7,9 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 const authRoutes = require('./routes/auth'); // includes register, login, logout
 const fetcher = require('./routes/fetcher');
+const stripeRoutes = require('./routes/stripe');
 
+app.use('/stripe/webhook', express.raw({type: "application/json"}));
 // Middleware
 app.use(express.json());
 app.use(cookieParser())
@@ -28,6 +30,8 @@ app.get('/', (req, res) => {
 // Use routes
 app.use('/auth', authRoutes);
 app.use('/fetch', fetcher);
+app.use('/stripe', stripeRoutes);
+
 
 // Start server
 app.listen(PORT, () => {

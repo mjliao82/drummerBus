@@ -94,6 +94,7 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
         )}
 
         <div className="flex justify-end space-x-4 pt-6 border-t">
+
           {payment.paymentStatus === 'unpaid' && payment.invoice==="false" && (
             <button className="bg-green-600 px-4 text-white py-2 rounded-md hover:bg-green-700 font-medium"
             onClick={() => navigate("/invoice", { state: { payment } })}
@@ -101,6 +102,7 @@ const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
               Send Invoice
             </button>
           )}
+
           <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">
             Download Receipt
           </button>

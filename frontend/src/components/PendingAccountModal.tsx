@@ -1,5 +1,6 @@
 import React from 'react';
 import Modal from './Modal';
+import socket from '../utils/socket';
 import { User, Mail, Phone, Calendar, Music, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 interface PendingAccountModalProps {
@@ -14,6 +15,7 @@ interface PendingAccountModalProps {
     preferredStyle: string;
     experience: string;
     notes?: string;
+    status?: string;
   };
   onApprove: (id: string) => void;
   onDeny: (id: string) => void;
@@ -24,17 +26,16 @@ const PendingAccountModal: React.FC<PendingAccountModalProps> = ({
   onClose,
   account,
   onApprove,
-  onDeny
 }) => {
-  const [showConfirmDeny, setShowConfirmDeny] = React.useState(false);
 
-  const handleApprove = () => {
+  const handleProceed = () => {
     onApprove(account.id);
+    onClose();
   };
 
-  const handleDeny = () => {
-    onDeny(account.id);
-    setShowConfirmDeny(false);
+  const [status, setStatus] = React.useState(account.status);
+  const handleStatusChange = async (newStatus: string) => {
+    setStatus(newStatus); // Update UI immediately for better UX
   };
 
   return (
@@ -93,41 +94,28 @@ const PendingAccountModal: React.FC<PendingAccountModalProps> = ({
           </div>
         )}
 
-        <div className="flex justify-end space-x-4 pt-6 border-t">
-          {showConfirmDeny ? (
-            <div className="flex items-center space-x-4 bg-red-50 p-3 rounded-md">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <p className="text-red-700 text-sm">Are you sure you want to deny this request?</p>
-              <button
-                onClick={() => setShowConfirmDeny(false)}
-                className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+
+
+        <div className="flex justify-between items-center pt-6 border-t">
+          <div className="flex items-center space-x-4">
+            <p className="text-sm font-medium text-gray-500">Status</p>
+            <select
+              value={status}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="px-2.5 py-1 border rounded-md text-xs font-medium focus:ring focus:ring-indigo-500"
+            >
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Declined">Declined</option>
+            </select>
+          </div>
+          {account.status !== 'Completed' && (
+            <button 
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
+              onClick={handleProceed}
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeny}
-                className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 transition text-sm"
-              >
-                Confirm Deny
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                onClick={() => setShowConfirmDeny(true)}
-                className="flex items-center text-red-600 hover:text-red-700 font-medium"
-              >
-                <XCircle className="h-5 w-5 mr-1" />
-                Deny
-              </button>
-              <button
-                onClick={handleApprove}
-                className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
-              >
-                <CheckCircle className="h-5 w-5 mr-1" />
-                Approve Account
-              </button>
-            </>
+              Proceed
+            </button>
           )}
         </div>
       </div>

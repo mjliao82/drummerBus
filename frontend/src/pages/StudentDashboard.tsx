@@ -69,13 +69,12 @@ function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-          <p className="mt-2 text-gray-600">Manage your drum lessons and account details</p>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="mb-8 grid md:grid-cols-3 gap-8">
+          <div className="p-6">
+            <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+            <p className="mt-2 text-gray-600">Manage your drum lessons and account details</p>
+          </div>
+          {/* Quick Stats */} 
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -93,25 +92,7 @@ function StudentDashboard() {
               </div>
               <Calendar className="h-8 w-8 text-indigo-600" />
             </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Hours</p>
-                <p className="text-2xl font-bold text-gray-900">24.5</p>
-              </div>
-              <Clock className="h-8 w-8 text-indigo-600" />
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Drum Styles</p>
-                <p className="text-2xl font-bold text-gray-900">2</p>
-              </div>
-              <Music className="h-8 w-8 text-indigo-600" />
-            </div>
-          </div>
+          </div>  
         </div>
 
         {/* Upcoming Lessons */}
