@@ -17,11 +17,15 @@ import AdminStudents from './pages/AdminStudents';
 import AdminPayments from './pages/AdminPayments';
 import Register from './pages/Register';
 import Payments from './pages/Payments';
+
+import Invoice from './pages/Invoice';
+
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import Checkout from "./pages/Checkout";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string);
+
 
 function App() {
   const user = useAuthStore((state) => state.user);
@@ -47,6 +51,8 @@ function App() {
 
         <Route path="/register" element={<Register />} />
 
+        <Route path='/invoice' element={<Invoice />} />
+
 
         <Route 
             path='/checkout'
@@ -56,6 +62,7 @@ function App() {
               </Elements>
             }
         />
+
 
 
 

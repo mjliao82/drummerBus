@@ -1,66 +1,70 @@
 import React from 'react';
+import { useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Calendar, CreditCard, Clock, Music } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import LessonDetailsModal from '../components/LessonDetailsModal';
 import PaymentDetailsModal from '../components/PaymentDetailsModal';
 
+
+interface Booking {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  instrument: string;
+  duration: string;
+  day: string;
+  time: string;
+  status: string;
+}
+
+
 function StudentDashboard() {
+  let URL: string;
+  if (window.location.host === "https://lidrummerbus.web.app/") {
+    URL = "https://drummerbus.onrender.com";
+  } else {
+    URL = "http://localhost:5001/";
+  }
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const [selectedLesson, setSelectedLesson] = React.useState<any>(null);
   const [selectedPayment, setSelectedPayment] = React.useState<any>(null);
+  const [subscribed, setSubscribed] = React.useState<Booking[]>([]); // State for fetched bookings
+
 
   if (!user || user.role !== 'client') {
     navigate('/login');
     return null;
   }
+  const fetch_lessons = async () => {
+    try {
+      const response = await fetch(`${URL}fetch/bookings`, {
+        method: "GET"
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch bookings");
+    }
+      const data = await response.json();
+      const userBookings = data.filter((booking: { name: string; }) => booking.name === user.name);
+      setSubscribed(userBookings);
+    } catch(err) {
+      console.error('Error: ', err)
+    }
+  };
+  useEffect(() => {
+    fetch_lessons();
+  }, []); 
 
-  const upcomingLessons = [
-    {
-      date: '2024-03-20',
-      time: '15:00',
-      instrument: 'Rock Drums',
-      duration: '45 min',
-      location: '123 Music St, Harmony City',
-      student: user.name,
-      status: 'Confirmed',
-      price: 65,
-      notes: 'Please practice the basic rock beats we covered last time'
-    },
-    {
-      date: '2024-03-23',
-      time: '14:30',
-      instrument: 'Jazz Drums',
-      duration: '60 min',
-      location: '123 Music St, Harmony City',
-      student: user.name,
-      status: 'Pending',
-      price: 85
-    },
+
+
+  const upcomingLessons: any[] = [
+
   ];
 
-  const lessonHistory = [
-    {
-      date: '2024-03-15',
-      instrument: 'Rock Drums',
-      duration: '45 min',
-      status: 'Completed',
-      location: '123 Music St, Harmony City',
-      student: user.name,
-      price: 65,
-      notes: 'Excellent progress on the drum fills'
-    },
-    {
-      date: '2024-03-10',
-      instrument: 'Beginner Drums',
-      duration: '45 min',
-      status: 'Completed',
-      location: '123 Music St, Harmony City',
-      student: user.name,
-      price: 65
-    },
-  ];
+
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
@@ -94,11 +98,11 @@ function StudentDashboard() {
         {/* Upcoming Lessons */}
         <div className="bg-white rounded-lg shadow-sm mb-8">
           <div className="p-6 border-b">
-            <h2 className="text-xl font-bold text-gray-900">Upcoming Lessons</h2>
+            <h2 className="text-xl font-bold text-gray-900">Lesson Timeslot</h2>
           </div>
           <div className="p-6">
             <div className="divide-y">
-              {upcomingLessons.map((lesson, index) => (
+              {subscribed.map((lesson, index) => (
                 <div key={index} className="py-4 first:pt-0 last:pb-0">
                   <div className="flex items-center justify-between">
                     <div>
@@ -106,46 +110,19 @@ function StudentDashboard() {
                         {lesson.instrument} Lesson
                       </p>
                       <p className="text-sm text-gray-600">
-                        {lesson.date} at {lesson.time} ({lesson.duration})
+                        {lesson.day} at {lesson.time} ({lesson.duration})
                       </p>
                     </div>
-                    <button
-                      onClick={() => setSelectedLesson(lesson)}
-                      className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          lesson.status === 'Confirmed' 
+                            ? 'bg-green-100 text-green-800'
+                            : lesson.status === "Declined"
+                            ? "bg-red-100 text-red-800"
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {lesson.status}
+                        </span>
 
-        {/* Lesson History */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-bold text-gray-900">Lesson History</h2>
-          </div>
-          <div className="p-6">
-            <div className="divide-y">
-              {lessonHistory.map((lesson, index) => (
-                <div key={index} className="py-4 first:pt-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {lesson.instrument} Lesson
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {lesson.date} ({lesson.duration}) - {lesson.status}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedLesson(lesson)}
-                      className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                    >
-                      View Details
-                    </button>
                   </div>
                 </div>
               ))}

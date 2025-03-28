@@ -17,17 +17,7 @@ function ClientDashboard() {
   }
 
   const upcomingLessons = [
-    {
-      date: '2024-03-20',
-      time: '15:00',
-      instrument: 'Piano',
-      duration: '45 min',
-      location: '123 Music St, Harmony City',
-      student: 'John Doe',
-      status: 'Confirmed',
-      price: 65,
-      notes: 'Please have the Bach piece prepared for review'
-    },
+
     {
       date: '2024-03-23',
       time: '14:30',
